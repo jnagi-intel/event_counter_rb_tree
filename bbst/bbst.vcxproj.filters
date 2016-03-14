@@ -15,15 +15,21 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="event_counter.h">
+    <ClInclude Include="RbTree.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="rb_tree.h">
+    <ClInclude Include="EventCounter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Types.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="rb_tree.c">
+    <ClCompile Include="EventCounter.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RbTree.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

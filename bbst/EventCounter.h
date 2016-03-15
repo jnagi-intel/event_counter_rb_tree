@@ -19,6 +19,8 @@ typedef struct _EVENT_COUNTER_CONTEXT
 {
     EVENT_COUNTER_ARGS  EventCounterArgs;
     FILE                *InputFileHandle;
+    UINT                NumEvents;
+    RB_TREE_CONTEXT     *pRbTreeContext;
 }EVENT_COUNTER_CONTEXT, *PEVENT_COUNTER_CONTEXT;
 
 // Function Prototypes

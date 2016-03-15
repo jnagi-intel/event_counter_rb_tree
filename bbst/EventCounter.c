@@ -6,7 +6,7 @@
 
 // Local Function Declarations
 PEVENT_COUNTER_CONTEXT  __createEventCounterContext();
-VOID                    __destroyEventCounterContext(PEVENT_COUNTER_CONTEXT pEventCounterContext);
+VOID                    __destroyEventCounterContext(PEVENT_COUNTER_CONTEXT *ppEventCounterContext);
 BOOLEAN                 __parseEventCounterArgs(PEVENT_COUNTER_CONTEXT pEventCounterContext, CHAR* argv[]);
 BOOLEAN                 __parseInputFile(PEVENT_COUNTER_CONTEXT pEventCounterContext);
 
@@ -47,9 +47,33 @@ INT main(INT argc, CHAR *argv[])
     return bRetStatus;
 }
 
-BOOLEAN __parseInputFile(PEVENT_COUNTER_CONTEXT pEventCounterArgs)
+BOOLEAN __parseInputFile(PEVENT_COUNTER_CONTEXT pEventCounterContext)
 {
+    UINT EventID = 0;
+    UINT EventCount = 0;
 
+    // Open with the file with the given filename in the command 
+    pEventCounterContext->InputFileHandle = fopen(pEventCounterContext->EventCounterArgs.InputFilename, "r");
+    if (pEventCounterContext->InputFileHandle == NULL)
+    {
+        printf("__parseInputFile: Unable to open Input file\n");
+        return FALSE;
+    }
+
+    // Read the number of ID's from the first line of the file 
+    fscanf(pEventCounterContext->InputFileHandle, "%u", &pEventCounterContext->NumEvents);
+
+    // Read remaining events with their counts and insert them in the red black tree 
+    while (!feof(pEventCounterContext->InputFileHandle))
+    {
+        // Read the line and get the Event ID and count 
+        fscanf(pEventCounterContext->InputFileHandle, "%u %u", &EventID, &EventCount);
+
+        // Insert this to the red black tree 
+        
+    }
+
+    return TRUE;
 }
 
 BOOLEAN __parseEventCounterArgs(PEVENT_COUNTER_CONTEXT pEventCounterContext, CHAR *argv[])
@@ -79,12 +103,26 @@ BOOLEAN __parseEventCounterArgs(PEVENT_COUNTER_CONTEXT pEventCounterContext, CHA
 
 PEVENT_COUNTER_CONTEXT __createEventCounterContext()
 {
-    
+    PEVENT_COUNTER_CONTEXT  pEventCounterContext = NULL;
+
+    // Allocate memory for the context 
+    pEventCounterContext = (PEVENT_COUNTER_CONTEXT)malloc(sizeof(EVENT_COUNTER_CONTEXT));
+    pEventCounterContext->pRbTreeContext = createRbTreeContext();
+
+    return pEventCounterContext;
 }
 
-VOID __destroyEventCounterContext(PEVENT_COUNTER_CONTEXT pEventCounterContext)
+VOID __destroyEventCounterContext(PEVENT_COUNTER_CONTEXT *ppEventCounterContext)
 {
+    // Destroy Rb Tree Context first 
+    destroyRbTreeContext(&(*ppEventCounterContext)->pRbTreeContext);
 
+    // Now free the Event Counter Context 
+    if (*ppEventCounterContext)
+    {
+        free(*ppEventCounterContext);
+        *ppEventCounterContext = NULL;
+    }
 }
 
 

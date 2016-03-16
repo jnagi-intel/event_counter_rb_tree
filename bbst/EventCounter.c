@@ -49,9 +49,11 @@ INT main(INT argc, CHAR *argv[])
 
 BOOLEAN __parseInputFile(PEVENT_COUNTER_CONTEXT pEventCounterContext)
 {
-    UINT EventID = 0;
-    UINT EventCount = 0;
-
+    PRB_TREE_CONTEXT    pRbTreeContext = pEventCounterContext->pRbTreeContext;
+    UINT                EventID = 0;
+    UINT                EventCount = 0;
+    INT                 Count = 0;
+    
     // Open with the file with the given filename in the command 
     pEventCounterContext->InputFileHandle = fopen(pEventCounterContext->EventCounterArgs.InputFilename, "r");
     if (pEventCounterContext->InputFileHandle == NULL)
@@ -64,13 +66,17 @@ BOOLEAN __parseInputFile(PEVENT_COUNTER_CONTEXT pEventCounterContext)
     fscanf(pEventCounterContext->InputFileHandle, "%u", &pEventCounterContext->NumEvents);
 
     // Read remaining events with their counts and insert them in the red black tree 
-    while (!feof(pEventCounterContext->InputFileHandle))
+    Count = pEventCounterContext->NumEvents;
+    while(Count-- > 0)
     {
         // Read the line and get the Event ID and count 
         fscanf(pEventCounterContext->InputFileHandle, "%u %u", &EventID, &EventCount);
 
-        // Insert this to the red black tree 
-        
+        // Insert this to the red black tree
+        if (pRbTreeContext->RbTreeFnTbl.insertRbTreeNode(pRbTreeContext, EventID, EventCount))
+        {
+            return FALSE;
+        }
     }
 
     return TRUE;

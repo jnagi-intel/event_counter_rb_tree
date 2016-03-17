@@ -11,6 +11,7 @@ BOOLEAN         __deleteRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, UINT
 PRB_TREE_NODE   __buildRbTreeNode(UINT ID, UINT Count);
 PRB_TREE_NODE   __findRbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, UINT ID);
 VOID            __freeRbTreeNode(PRB_TREE_NODE *ppRbTreeNode);
+BOOLEAN         __deleteDegree1RbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, PRB_TREE_NODE pRbTreeNode, PRB_TREE_NODE pChildRbTreeNode);
 
 PRB_TREE_CONTEXT createRbTreeContext()
 {
@@ -126,7 +127,7 @@ BOOLEAN __insertRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, UINT ID, UIN
         }
 
         // Case II : Parent exists and is black, nothing to be done
-        else if (pTempRbTreeNode->pParent && pTempRbTreeNode->pParent->Color == BLACK)
+        if (pTempRbTreeNode->pParent && pTempRbTreeNode->pParent->Color == BLACK)
         {
             // Nothing to be done here, all properties still hold! 
             break;
@@ -297,7 +298,7 @@ BOOLEAN __insertRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, UINT ID, UIN
 
         // Phew !! 
         // Should never reach here, leave a print to catch the error 
-        printf("__insertRbTreeNode: Restoring Red Black Property, Illegal scenario, Exit!");
+        printf("__insertRbTreeNode: Restoring Red Black Property, Illegal scenario, Exit!\r\n");
         return FALSE;
 
     } while (TRUE);
@@ -369,60 +370,49 @@ BOOLEAN __deleteRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, UINT ID)
     }
     else if (pRbTreeNode->pLeftChild && !pRbTreeNode->pRightChild)
     {
-        // Degree 1 Node
-        if (pRbTreeNode->Color == RED)
+        // Degree 1 node, adjust the pointers 
+        if (pRbTreeNode->pParent->pLeftChild == pRbTreeNode)
         {
-            // Red Degree 1 node, easy just free up the node and adjust the pointers
-            if (pRbTreeNode->pParent->pLeftChild == pRbTreeNode)
-            {
-                pRbTreeNode->pParent->pLeftChild = pRbTreeNode->pLeftChild;
-            }
-            else
-            {
-                pRbTreeNode->pParent->pRightChild = pRbTreeNode->pLeftChild;
-            }
-            pRbTreeNode->pLeftChild->pParent = pRbTreeNode->pParent;
-            __freeRbTreeNode(&pRbTreeNode);
+            pRbTreeNode->pParent->pLeftChild = pRbTreeNode->pLeftChild;
         }
         else
         {
-            // Black Degree 1 Node
+            pRbTreeNode->pParent->pRightChild = pRbTreeNode->pLeftChild;
         }
+        pRbTreeNode->pLeftChild->pParent = pRbTreeNode->pParent;
+
+        __deleteDegree1RbTreeNode(pRbTreeContext, pRbTreeNode, pRbTreeNode->pLeftChild);
     }
     else if (!pRbTreeNode->pLeftChild && pRbTreeNode->pRightChild)
     {
-        // Degree 1 Node
-        if (pRbTreeNode->Color == RED)
+        // Degree 1 node, adjust the pointers 
+        if (pRbTreeNode->pParent->pLeftChild == pRbTreeNode)
         {
-            // Red Degree 1 node, easy just free up the node and adjust the pointers
-            if (pRbTreeNode->pParent->pLeftChild == pRbTreeNode)
-            {
-                pRbTreeNode->pParent->pLeftChild = pRbTreeNode->pRightChild;
-            }
-            else
-            {
-                pRbTreeNode->pParent->pRightChild = pRbTreeNode->pRightChild;
-            }
-            pRbTreeNode->pRightChild->pParent = pRbTreeNode->pParent;
-            __freeRbTreeNode(&pRbTreeNode);
+            pRbTreeNode->pParent->pLeftChild = pRbTreeNode->pRightChild;
         }
         else
         {
-            // Black Degree 1 Node
+            pRbTreeNode->pParent->pRightChild = pRbTreeNode->pRightChild;
         }
+        pRbTreeNode->pRightChild->pParent = pRbTreeNode->pParent;
+
+        __deleteDegree1RbTreeNode(pRbTreeContext, pRbTreeNode, pRbTreeNode->pRightChild);
     }
     else
     {
         // Degree 0 node
-        if (pRbTreeNode->Color == RED)
+        // Adjust the pointers first
+        if (pRbTreeNode->pParent->pLeftChild == pRbTreeNode)
         {
-            // if its a red node, no rebalancing needed 
-            __freeRbTreeNode(&pRbTreeNode);
+            pRbTreeNode->pParent->pLeftChild = NULL;
         }
         else
         {
-            // Removing a black leaf
+            pRbTreeNode->pParent->pRightChild = NULL;
         }
+
+        // Similar to deleting from a degree 1 node with y as NULL 
+        __deleteDegree1RbTreeNode(pRbTreeContext, pRbTreeNode, NULL);
     }
 
     return TRUE;
@@ -440,6 +430,346 @@ VOID __freeRbTreeNode(PRB_TREE_NODE *ppRbTreeNode)
         free(*ppRbTreeNode);
         *ppRbTreeNode = NULL;
     }
+}
+
+BOOLEAN __deleteDegree1RbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, PRB_TREE_NODE pRbTreeNode, PRB_TREE_NODE pChildRbTreeNode)
+{
+    PRB_TREE_NODE   pTempRbTreeNode     = NULL;
+    PRB_TREE_NODE   pSiblingRbTreeNode  = NULL;
+    PRB_TREE_NODE   pParentRbTreeNode   = NULL;
+    PRB_TREE_NODE   pSiblingRedChildRbTreeNode = NULL;
+    PRB_TREE_NODE   pSiblingRightChildRbTreeNode = NULL;
+    PRB_TREE_NODE   pSiblingRightChildRedChildRbTreeNode = NULL;
+    PRB_TREE_NODE   pSiblingLeftChildRedChildRbTreeNode = NULL;
+    PRB_TREE_NODE   pSiblingLeftChildRbTreeNode = NULL;
+    BOOLEAN         IsTempNodeLeftChild = FALSE;
+    UINT            NumSiblingRedChildren = 0;
+    UINT            NumSiblingRightChildRedChildren = 0;
+    UINT            NumSiblingLeftChildRedChildren = 0;
+    
+    // if removed node is red, free up the node and done! 
+    // else define y or pChildRbTreeNode to be root of the deficient subtree and 
+    // py to be the parent of y
+    if (pRbTreeNode->Color == RED)
+    {
+        __freeRbTreeNode(&pRbTreeNode);
+    }
+    else
+    {
+        // Special case when y is NULL 
+        if (pChildRbTreeNode == NULL)
+        {
+            pParentRbTreeNode = pRbTreeNode->pParent;
+        }
+
+        __freeRbTreeNode(&pRbTreeNode);
+
+        // Simple case handled first
+        // removed node is black, but y is red
+        if (pChildRbTreeNode && pChildRbTreeNode->Color == RED)
+        {
+            // Color this node black and done! 
+            pChildRbTreeNode->Color = BLACK;
+        }
+        else
+        {
+            // Complex Case, Both the node removed and Child (y) were black
+            pTempRbTreeNode = pChildRbTreeNode;
+            do
+            {
+                // if y is the root, then the entire tree is deficient, so done
+                if (pTempRbTreeNode && pTempRbTreeNode->pParent == NULL)
+                {
+                    pRbTreeContext->pMinRbTreeNode = pTempRbTreeNode;
+                    break;
+                }
+
+                // Storing some values to decide case 
+                if (pTempRbTreeNode)
+                {
+                    pParentRbTreeNode = pTempRbTreeNode->pParent;
+                    pSiblingRbTreeNode = (pTempRbTreeNode->pParent->pLeftChild == pTempRbTreeNode) ? pTempRbTreeNode->pRightChild : pTempRbTreeNode->pLeftChild;;
+                    IsTempNodeLeftChild = (pTempRbTreeNode->pParent->pLeftChild == pTempRbTreeNode) ? TRUE : FALSE;
+                }
+                
+                if (pSiblingRbTreeNode->pLeftChild && pSiblingRbTreeNode->pLeftChild->Color == RED &&
+                    pSiblingRbTreeNode->pRightChild && pSiblingRbTreeNode->pRightChild->Color == RED)
+                {
+                    NumSiblingRedChildren = 2;
+                }
+                else if ((pSiblingRbTreeNode->pLeftChild && pSiblingRbTreeNode->pLeftChild->Color == RED) ||
+                    (pSiblingRbTreeNode->pRightChild && pSiblingRbTreeNode->pRightChild->Color == RED))
+                {
+                    NumSiblingRedChildren = 1;
+                }
+                else
+                {
+                    NumSiblingRedChildren = 0;
+                }
+                
+                // Notation Xcn where 
+                // X is the relationship between Temp and Parent - IsTempNodeLeftChild 
+                // c defines the color of Sibling
+                // n is the num of red children of sibling - NumSiblingRedChildren
+
+                // Lets begin !!! 
+
+                // Rb0/Lb0 and Parent is BLACK
+                if (pSiblingRbTreeNode->Color == BLACK && NumSiblingRedChildren == 0 && pParentRbTreeNode->Color == BLACK)
+                {
+                    // Change the Color of Sibling to red and now Parent is the new root of deficient sub tree 
+                    pSiblingRbTreeNode->Color = RED;
+                    pTempRbTreeNode = pParentRbTreeNode;
+
+                    continue;
+                }
+
+                // Rb0/Lb0 and Parent is RED
+                if (pSiblingRbTreeNode->Color == BLACK && NumSiblingRedChildren == 0 && pParentRbTreeNode->Color == RED)
+                {
+                    // Flip the colors of Sibling and parent, and done! 
+                    pSiblingRbTreeNode->Color = RED;
+                    pParentRbTreeNode->Color = BLACK;
+
+                    break;
+                }
+
+                // Rb1 case 1 Sibling's left child is Red
+                if (!IsTempNodeLeftChild && pSiblingRbTreeNode->Color == BLACK && NumSiblingRedChildren == 1 && pSiblingRbTreeNode->pLeftChild->Color == RED)
+                {
+                    // This will lead to an LL rotation
+                    pSiblingRbTreeNode->pLeftChild->Color = BLACK;
+
+                    pParentRbTreeNode->pLeftChild = pSiblingRbTreeNode->pRightChild;
+                    pSiblingRbTreeNode->pParent = pParentRbTreeNode->pParent;
+                    pSiblingRbTreeNode->pRightChild = pParentRbTreeNode;
+                    pParentRbTreeNode->pParent = pSiblingRbTreeNode;
+                    pParentRbTreeNode->pLeftChild->pParent = pParentRbTreeNode;
+
+                    break;
+                }
+
+                // Lb1 case 1 Sibling's Right child is Red
+                if (IsTempNodeLeftChild && pSiblingRbTreeNode->Color == BLACK && NumSiblingRedChildren == 1 && pSiblingRbTreeNode->pRightChild->Color == RED)
+                {
+                    // This will lead to an RR rotation
+                    pSiblingRbTreeNode->pRightChild->Color = BLACK;
+
+                    pParentRbTreeNode->pRightChild = pSiblingRbTreeNode->pLeftChild;
+                    pSiblingRbTreeNode->pParent = pParentRbTreeNode->pParent;
+                    pSiblingRbTreeNode->pLeftChild = pParentRbTreeNode;
+                    pParentRbTreeNode->pParent = pSiblingRbTreeNode;
+                    pParentRbTreeNode->pRightChild->pParent = pParentRbTreeNode;
+
+                    break;
+                }
+
+                // Rb1 case 2 Sibling's right child is red or Rb2
+                if ((!IsTempNodeLeftChild && pSiblingRbTreeNode->Color == BLACK && NumSiblingRedChildren == 1 && pSiblingRbTreeNode->pRightChild->Color == RED) ||
+                     (!IsTempNodeLeftChild && pSiblingRbTreeNode->Color == BLACK && NumSiblingRedChildren == 2))
+                {
+                    // This will lead to a LR Rotation
+                    pSiblingRbTreeNode->pRightChild->Color = pParentRbTreeNode->Color;
+                    pParentRbTreeNode->Color = BLACK;
+
+                    pSiblingRedChildRbTreeNode = pSiblingRbTreeNode->pRightChild;
+                    pSiblingRedChildRbTreeNode->pParent = pParentRbTreeNode->pParent;
+                    pSiblingRbTreeNode->pRightChild = pSiblingRedChildRbTreeNode->pLeftChild;
+                    pParentRbTreeNode->pLeftChild = pSiblingRedChildRbTreeNode->pRightChild;
+                    pSiblingRedChildRbTreeNode->pLeftChild = pSiblingRbTreeNode;
+                    pSiblingRedChildRbTreeNode->pRightChild = pParentRbTreeNode;
+                    pSiblingRbTreeNode->pRightChild->pParent = pSiblingRbTreeNode;
+                    pParentRbTreeNode->pLeftChild->pParent = pParentRbTreeNode;
+                    pSiblingRbTreeNode->pParent = pSiblingRedChildRbTreeNode;
+                    pParentRbTreeNode->pParent = pSiblingRedChildRbTreeNode;
+
+                    break;
+                }
+
+                // Lb1 case 2 Sibling's left child is red or Lb2
+                if ((IsTempNodeLeftChild && pSiblingRbTreeNode->Color == BLACK && NumSiblingRedChildren == 1 && pSiblingRbTreeNode->pLeftChild->Color == RED) ||
+                    (IsTempNodeLeftChild && pSiblingRbTreeNode->Color ==BLACK && NumSiblingRedChildren == 2))
+                {
+                    // This will lead to a RL Rotation
+                    pSiblingRbTreeNode->pLeftChild->Color = pParentRbTreeNode->Color;
+                    pParentRbTreeNode->Color = BLACK;
+
+                    pSiblingRedChildRbTreeNode = pSiblingRbTreeNode->pLeftChild;
+                    pSiblingRedChildRbTreeNode->pParent = pParentRbTreeNode->pParent;
+                    pSiblingRbTreeNode->pLeftChild = pSiblingRedChildRbTreeNode->pRightChild;
+                    pParentRbTreeNode->pRightChild = pSiblingRedChildRbTreeNode->pLeftChild;
+                    pSiblingRedChildRbTreeNode->pRightChild = pSiblingRbTreeNode;
+                    pSiblingRedChildRbTreeNode->pLeftChild = pParentRbTreeNode;
+                    pSiblingRbTreeNode->pLeftChild->pParent = pSiblingRbTreeNode;
+                    pParentRbTreeNode->pRightChild->pParent = pParentRbTreeNode;
+                    pSiblingRbTreeNode->pParent = pSiblingRedChildRbTreeNode;
+                    pParentRbTreeNode->pParent = pSiblingRedChildRbTreeNode;
+
+                    break;
+                }
+
+                // Now if the color of the Sibling is red, then define it as 
+                // Rrn where n is the number of red children of v's right child
+                // Lrn where n is the number of red children of v's left child
+                if (!IsTempNodeLeftChild)
+                {
+                    if (pSiblingRbTreeNode->pRightChild->pLeftChild && pSiblingRbTreeNode->pRightChild->pLeftChild->Color == RED &&
+                        pSiblingRbTreeNode->pRightChild->pRightChild && pSiblingRbTreeNode->pRightChild->pRightChild->Color == RED)
+                    {
+                        NumSiblingRightChildRedChildren = 2;
+                    }
+                    else if ((pSiblingRbTreeNode->pRightChild->pLeftChild && pSiblingRbTreeNode->pRightChild->pLeftChild->Color == RED) ||
+                        (pSiblingRbTreeNode->pRightChild->pRightChild && pSiblingRbTreeNode->pRightChild->pRightChild->Color == RED))
+                    {
+                        NumSiblingRightChildRedChildren = 1;
+                    }
+                    else
+                    {
+                        NumSiblingRightChildRedChildren = 0;
+                    }
+                }
+                else
+                {
+                    if (pSiblingRbTreeNode->pLeftChild->pLeftChild && pSiblingRbTreeNode->pLeftChild->pLeftChild->Color == RED &&
+                        pSiblingRbTreeNode->pLeftChild->pRightChild && pSiblingRbTreeNode->pLeftChild->pRightChild->Color == RED)
+                    {
+                        NumSiblingLeftChildRedChildren = 2;
+                    }
+                    else if ((pSiblingRbTreeNode->pLeftChild->pLeftChild && pSiblingRbTreeNode->pLeftChild->pLeftChild->Color == RED) ||
+                        (pSiblingRbTreeNode->pLeftChild->pRightChild && pSiblingRbTreeNode->pLeftChild->pRightChild->Color == RED))
+                    {
+                        NumSiblingLeftChildRedChildren = 1;
+                    }
+                    else
+                    {
+                        NumSiblingLeftChildRedChildren = 0;
+                    }
+                }
+
+                // Rr0 
+                if (!IsTempNodeLeftChild && pSiblingRbTreeNode->Color == RED && NumSiblingRightChildRedChildren == 0)
+                {
+                    // This will lead to a LL rotation
+                    pSiblingRbTreeNode->Color = BLACK;
+                    pSiblingRbTreeNode->pRightChild->Color = RED;
+
+                    pSiblingRbTreeNode->pParent = pParentRbTreeNode->pParent;
+                    pParentRbTreeNode->pLeftChild = pSiblingRbTreeNode->pRightChild;
+                    pSiblingRbTreeNode->pRightChild = pParentRbTreeNode;
+                    pParentRbTreeNode->pParent = pSiblingRbTreeNode;
+                    pParentRbTreeNode->pLeftChild->pParent = pParentRbTreeNode;
+
+                    break;
+                }
+
+                // Lr0 
+                if (IsTempNodeLeftChild && pSiblingRbTreeNode->Color == RED && NumSiblingLeftChildRedChildren == 0)
+                {
+                    // This will lead to a RR rotation
+                    pSiblingRbTreeNode->Color = BLACK;
+                    pSiblingRbTreeNode->pLeftChild->Color = RED;
+
+                    pSiblingRbTreeNode->pParent = pParentRbTreeNode->pParent;
+                    pParentRbTreeNode->pRightChild = pSiblingRbTreeNode->pLeftChild;
+                    pSiblingRbTreeNode->pLeftChild = pParentRbTreeNode;
+                    pParentRbTreeNode->pParent = pSiblingRbTreeNode;
+                    pParentRbTreeNode->pRightChild->pParent = pParentRbTreeNode;
+
+                    break;
+                }
+
+                // Rr1 case 1 Sibling's right child's left child is red  
+                if (!IsTempNodeLeftChild && pSiblingRbTreeNode->Color == RED && NumSiblingRightChildRedChildren == 1 && pSiblingRbTreeNode->pRightChild->pLeftChild->Color == RED)
+                {
+                    // This will lead to a LR rotation 
+                    pSiblingRbTreeNode->pRightChild->pLeftChild->Color = BLACK;
+
+                    pSiblingRightChildRbTreeNode = pSiblingRbTreeNode->pRightChild;
+                    pSiblingRightChildRbTreeNode->pParent = pParentRbTreeNode->pParent;
+                    pSiblingRbTreeNode->pRightChild = pSiblingRightChildRbTreeNode->pLeftChild;
+                    pParentRbTreeNode->pLeftChild = pSiblingRightChildRbTreeNode->pRightChild;
+                    pSiblingRightChildRbTreeNode->pLeftChild = pSiblingRbTreeNode;
+                    pSiblingRightChildRbTreeNode->pRightChild = pParentRbTreeNode;
+                    pSiblingRbTreeNode->pRightChild->pParent = pSiblingRbTreeNode;
+                    pParentRbTreeNode->pLeftChild->pParent = pParentRbTreeNode;
+                    pSiblingRbTreeNode->pParent = pSiblingRightChildRbTreeNode;
+                    pParentRbTreeNode->pParent = pSiblingRightChildRbTreeNode;
+
+                    break;
+                }
+
+                // Lr1 case 1 Sibling's left child's right child is red  
+                if (IsTempNodeLeftChild && pSiblingRbTreeNode->Color == RED && NumSiblingLeftChildRedChildren == 1 && pSiblingRbTreeNode->pLeftChild->pRightChild->Color == RED)
+                {
+                    // This will lead to a LR rotation 
+                    pSiblingRbTreeNode->pLeftChild->pRightChild->Color = BLACK;
+
+                    pSiblingLeftChildRbTreeNode = pSiblingRbTreeNode->pLeftChild;
+                    pSiblingLeftChildRbTreeNode->pParent = pParentRbTreeNode->pParent;
+                    pSiblingRbTreeNode->pLeftChild = pSiblingLeftChildRbTreeNode->pRightChild;
+                    pParentRbTreeNode->pRightChild = pSiblingLeftChildRbTreeNode->pLeftChild;
+                    pSiblingLeftChildRbTreeNode->pRightChild = pSiblingRbTreeNode;
+                    pSiblingLeftChildRbTreeNode->pLeftChild = pParentRbTreeNode;
+                    pSiblingRbTreeNode->pLeftChild->pParent = pSiblingRbTreeNode;
+                    pParentRbTreeNode->pRightChild->pParent = pParentRbTreeNode;
+                    pSiblingRbTreeNode->pParent = pSiblingLeftChildRbTreeNode;
+                    pParentRbTreeNode->pParent = pSiblingLeftChildRbTreeNode;
+
+                    break;
+                }
+
+                // Rr1 case 2 Sibling's right child's right child is red or Rr2
+                if ((!IsTempNodeLeftChild && pSiblingRbTreeNode->Color == RED && NumSiblingRightChildRedChildren == 1 && pSiblingRbTreeNode->pRightChild->pRightChild->Color == RED) ||
+                    (!IsTempNodeLeftChild && pSiblingRbTreeNode->Color == RED && NumSiblingRightChildRedChildren == 2))
+                {
+                    pSiblingRbTreeNode->pRightChild->pRightChild->Color = BLACK;
+                    
+                    pSiblingRightChildRbTreeNode = pSiblingRbTreeNode->pRightChild;
+                    pSiblingRightChildRedChildRbTreeNode = pSiblingRbTreeNode->pRightChild->pRightChild;
+                    pSiblingRightChildRedChildRbTreeNode->pParent = pParentRbTreeNode->pParent;
+                    pSiblingRightChildRbTreeNode->pRightChild = pSiblingRightChildRedChildRbTreeNode->pLeftChild;
+                    pParentRbTreeNode->pLeftChild = pSiblingRightChildRedChildRbTreeNode->pRightChild;
+                    pSiblingRightChildRedChildRbTreeNode->pLeftChild = pSiblingRbTreeNode;
+                    pSiblingRightChildRedChildRbTreeNode->pRightChild = pParentRbTreeNode;
+                    pSiblingRightChildRbTreeNode->pRightChild->pParent = pSiblingRightChildRbTreeNode;
+                    pParentRbTreeNode->pLeftChild->pParent = pParentRbTreeNode;
+                    pSiblingRbTreeNode->pParent = pSiblingRightChildRedChildRbTreeNode;
+                    pParentRbTreeNode->pParent = pSiblingRightChildRedChildRbTreeNode;
+
+                    break;
+                }
+
+                // Lr1 case 2 Sibling's left child's left child is red or Lr2
+                if ((IsTempNodeLeftChild && pSiblingRbTreeNode->Color == RED && NumSiblingLeftChildRedChildren == 1 && pSiblingRbTreeNode->pLeftChild->pLeftChild->Color == RED) ||
+                    (IsTempNodeLeftChild && pSiblingRbTreeNode->Color == RED && NumSiblingLeftChildRedChildren == 2))
+                {
+                    pSiblingRbTreeNode->pLeftChild->pLeftChild->Color = BLACK;
+
+                    pSiblingLeftChildRbTreeNode = pSiblingRbTreeNode->pLeftChild;
+                    pSiblingLeftChildRedChildRbTreeNode = pSiblingRbTreeNode->pLeftChild->pLeftChild;
+                    pSiblingLeftChildRedChildRbTreeNode->pParent = pParentRbTreeNode->pParent;
+                    pSiblingLeftChildRbTreeNode->pRightChild = pSiblingLeftChildRedChildRbTreeNode->pRightChild;
+                    pParentRbTreeNode->pRightChild = pSiblingLeftChildRedChildRbTreeNode->pLeftChild;
+                    pSiblingLeftChildRedChildRbTreeNode->pRightChild = pSiblingRbTreeNode;
+                    pSiblingLeftChildRedChildRbTreeNode->pLeftChild = pParentRbTreeNode;
+                    pSiblingLeftChildRbTreeNode->pLeftChild->pParent = pSiblingLeftChildRbTreeNode;
+                    pParentRbTreeNode->pRightChild->pParent = pParentRbTreeNode;
+                    pSiblingRbTreeNode->pParent = pSiblingLeftChildRedChildRbTreeNode;
+                    pParentRbTreeNode->pParent = pSiblingLeftChildRedChildRbTreeNode;
+
+                    break;
+                }
+
+                // Phew !! 
+                // Should never reach here, leave a print to catch the error 
+                printf("__deleteDegree1RbTreeNode: Restoring Red Black Property, Illegal scenario, Exit!\r\n");
+                return FALSE;
+
+            } while (TRUE);
+        }
+    }
+
+    return TRUE;
 }
 
 

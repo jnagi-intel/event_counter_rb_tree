@@ -335,9 +335,11 @@ PRB_TREE_NODE __findRbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, UINT ID)
 
 BOOLEAN __deleteRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, UINT ID)
 {
-    PRB_TREE_NODE   pRbTreeNode = NULL;
+    PRB_TREE_NODE   pRbTreeNode             = NULL;
+    PRB_TREE_NODE   pMaxSubTreeRbTreeNode   = NULL;
+    PRB_TREE_NODE   pTempRbTreeNode         = NULL;
 
-    // get the Tree Node with the ID
+    // Get the Tree Node with the ID
     pRbTreeNode = __findRbTreeNode(pRbTreeContext, ID);
 
     if (!pRbTreeNode)
@@ -347,22 +349,67 @@ BOOLEAN __deleteRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, UINT ID)
         return FALSE;
     }
 
-    // Check if its a degree 1 node or degree 2 node
+    // Check if its a degree 0/1/2 node
     if (pRbTreeNode->pLeftChild && pRbTreeNode->pRightChild)
     {
         // Degree 2 Node
-        // Convert this to a degree 0 node by replacing with the largest node in the left subtree 
+        // Convert this to a degree 0 or degree 1 node by replacing with the largest node in the left subtree 
+        pMaxSubTreeRbTreeNode = pRbTreeNode;
+        while (pMaxSubTreeRbTreeNode->pRightChild != NULL)
+        {
+            pMaxSubTreeRbTreeNode = pMaxSubTreeRbTreeNode->pRightChild;
+        }
+        
+        // Exchange the nodes 
+        pTempRbTreeNode         = pMaxSubTreeRbTreeNode;
+        pMaxSubTreeRbTreeNode   = pRbTreeNode;
+        pRbTreeNode             = pTempRbTreeNode;
 
-
+        // Now check whether this is a Degree 0 or Degree 1 node
     }
     else if (pRbTreeNode->pLeftChild && !pRbTreeNode->pRightChild)
     {
         // Degree 1 Node
-
+        if (pRbTreeNode->Color == RED)
+        {
+            // Red Degree 1 node, easy just free up the node and adjust the pointers
+            if (pRbTreeNode->pParent->pLeftChild == pRbTreeNode)
+            {
+                pRbTreeNode->pParent->pLeftChild = pRbTreeNode->pLeftChild;
+            }
+            else
+            {
+                pRbTreeNode->pParent->pRightChild = pRbTreeNode->pLeftChild;
+            }
+            pRbTreeNode->pLeftChild->pParent = pRbTreeNode->pParent;
+            __freeRbTreeNode(&pRbTreeNode);
+        }
+        else
+        {
+            // Black Degree 1 Node
+        }
     }
     else if (!pRbTreeNode->pLeftChild && pRbTreeNode->pRightChild)
     {
         // Degree 1 Node
+        if (pRbTreeNode->Color == RED)
+        {
+            // Red Degree 1 node, easy just free up the node and adjust the pointers
+            if (pRbTreeNode->pParent->pLeftChild == pRbTreeNode)
+            {
+                pRbTreeNode->pParent->pLeftChild = pRbTreeNode->pRightChild;
+            }
+            else
+            {
+                pRbTreeNode->pParent->pRightChild = pRbTreeNode->pRightChild;
+            }
+            pRbTreeNode->pRightChild->pParent = pRbTreeNode->pParent;
+            __freeRbTreeNode(&pRbTreeNode);
+        }
+        else
+        {
+            // Black Degree 1 Node
+        }
     }
     else
     {

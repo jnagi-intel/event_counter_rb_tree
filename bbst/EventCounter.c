@@ -73,7 +73,7 @@ BOOLEAN __parseInputFile(PEVENT_COUNTER_CONTEXT pEventCounterContext)
         fscanf(pEventCounterContext->InputFileHandle, "%u %u", &EventID, &EventCount);
 
         // Insert this to the red black tree
-        if (pRbTreeContext->RbTreeFnTbl.insertRbTreeNode(pRbTreeContext, EventID, EventCount))
+        if (!pRbTreeContext->RbTreeFnTbl.insertRbTreeNode(pRbTreeContext, EventID, EventCount))
         {
             return FALSE;
         }

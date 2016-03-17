@@ -26,6 +26,7 @@ typedef struct _RB_TREE_CONTEXT
     struct _RB_TREE_FN_TBL
     {
         BOOLEAN(*insertRbTreeNode) (struct _RB_TREE_CONTEXT *pRbTreeContext, UINT ID, UINT Count);
+        BOOLEAN(*deleteRbTreeNode) (struct _RB_TREE_CONTEXT *pRbTreeContext, UINT ID);
     }RbTreeFnTbl;
 }RB_TREE_CONTEXT, *PRB_TREE_CONTEXT;
 

@@ -13,6 +13,9 @@ PRB_TREE_NODE   __findRbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, UINT ID);
 VOID            __freeRbTreeNode(PRB_TREE_NODE *ppRbTreeNode);
 BOOLEAN         __deleteDegree1RbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, PRB_TREE_NODE pRbTreeNode, PRB_TREE_NODE pChildRbTreeNode);
 
+// createRbTreeContext()
+// This function allocates memory for the context 
+// and initilize the variables and function pointers
 PRB_TREE_CONTEXT createRbTreeContext()
 {
     PRB_TREE_CONTEXT    pRbTreeContext = NULL;
@@ -30,11 +33,16 @@ PRB_TREE_CONTEXT createRbTreeContext()
     return pRbTreeContext;
 }
 
+// destroyRbTreeContext()
+// This function deallocates and frees up the context
 VOID destroyRbTreeContext(PRB_TREE_CONTEXT *ppRbTreeContext)
 {
 
 }
 
+// __buildRbTreeNode()
+// This function allocates and initializes the Rb Tree Node 
+// from ID and Count
 PRB_TREE_NODE __buildRbTreeNode(UINT ID, UINT Count)
 {
     PRB_TREE_NODE   pRbTreeNode = NULL;
@@ -51,6 +59,10 @@ PRB_TREE_NODE __buildRbTreeNode(UINT ID, UINT Count)
     return pRbTreeNode;
 }
 
+// __insertRbTreeNode()
+// This function inserts the Rb Tree node in the 
+// Red black Tree considering all the scenrios and also 
+// rebalances the tree maintaining the Red Black property
 BOOLEAN __insertRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, UINT ID, UINT Count)
 {
     PRB_TREE_NODE   pNewRbTreeNode          = NULL;
@@ -306,6 +318,9 @@ BOOLEAN __insertRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, UINT ID, UIN
     return TRUE;
 }
 
+// __findRbTreeNode()
+// This function finds the Rb Tree Node with the particular ID
+// in the Reb Black Tree
 PRB_TREE_NODE __findRbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, UINT ID)
 {
     PRB_TREE_NODE    pTempRbTreeNode = NULL;
@@ -334,6 +349,11 @@ PRB_TREE_NODE __findRbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, UINT ID)
     return pTempRbTreeNode;
 }
 
+// __deleteRbTreeNode()
+// This function deletes the Rb Tree node in the 
+// Red black Tree. It checks if the node to be removed was 
+// degree 0/1/2 and then adjusts the pointers to call delete 
+// using Degree 1 delete algorithm from Red Black Tree
 BOOLEAN __deleteRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, UINT ID)
 {
     PRB_TREE_NODE   pRbTreeNode             = NULL;
@@ -433,6 +453,8 @@ BOOLEAN __deleteRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, UINT ID)
     return TRUE;
 }
 
+// __freeRbTreeNode()
+// This function frees up the memory for a Red Black Tree Node
 VOID __freeRbTreeNode(PRB_TREE_NODE *ppRbTreeNode)
 {
     // Make the pointers NULL and free up the Tree Node pointer 
@@ -447,6 +469,9 @@ VOID __freeRbTreeNode(PRB_TREE_NODE *ppRbTreeNode)
     }
 }
 
+// __deleteDegree1RbTreeNode()
+// This function implements all the scenarios and rebalances the red black 
+// tree preserving the properties.
 BOOLEAN __deleteDegree1RbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, PRB_TREE_NODE pRbTreeNode, PRB_TREE_NODE pChildRbTreeNode)
 {
     PRB_TREE_NODE   pTempRbTreeNode                         = NULL;
@@ -475,6 +500,14 @@ BOOLEAN __deleteDegree1RbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, PRB_TREE_NODE
         if (pChildRbTreeNode == NULL)
         {
             pParentRbTreeNode = pRbTreeNode->pParent;
+
+            if (pParentRbTreeNode == NULL)
+            {
+                // Looks like removed node was the root and the only node
+                // Nothing to be done 
+                pRbTreeContext->pMinRbTreeNode = NULL;
+                return TRUE;
+            }
         }
 
         __freeRbTreeNode(&pRbTreeNode);
@@ -485,10 +518,16 @@ BOOLEAN __deleteDegree1RbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, PRB_TREE_NODE
         {
             // Color this node black and done! 
             pChildRbTreeNode->Color = BLACK;
+
+            if (pChildRbTreeNode->pParent == NULL)
+            {
+                pRbTreeContext->pMinRbTreeNode = pChildRbTreeNode;
+            }
         }
         else
         {
             // Complex Case, Both the node removed and Child (y) were black
+            // Child can be NULL as well
             pTempRbTreeNode = pChildRbTreeNode;
             do
             {
@@ -509,6 +548,9 @@ BOOLEAN __deleteDegree1RbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, PRB_TREE_NODE
                 else
                 {
                     // This would be a case where black leaf is being removed
+                    // Assuming this would happen only in the first iteration
+                    // pParentRbTreeNode is already defined
+                    // 
                     if (pParentRbTreeNode->pLeftChild != NULL)
                     {
                         pSiblingRbTreeNode = pParentRbTreeNode->pLeftChild;
@@ -519,8 +561,14 @@ BOOLEAN __deleteDegree1RbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, PRB_TREE_NODE
                         pSiblingRbTreeNode = pParentRbTreeNode->pRightChild;
                         IsTempNodeLeftChild = TRUE;
                     }
+                    else
+                    {
+                        // No Sibling! 
+                        // Is this possible ? Need to check! 
+                    }
                 }
                 
+                // Assuming the sibling always exists
                 if (pSiblingRbTreeNode->pLeftChild && pSiblingRbTreeNode->pLeftChild->Color == RED &&
                     pSiblingRbTreeNode->pRightChild && pSiblingRbTreeNode->pRightChild->Color == RED)
                 {
@@ -574,7 +622,7 @@ BOOLEAN __deleteDegree1RbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, PRB_TREE_NODE
                     pSiblingRbTreeNode->pParent = pParentRbTreeNode->pParent;
                     pSiblingRbTreeNode->pRightChild = pParentRbTreeNode;
                     pParentRbTreeNode->pParent = pSiblingRbTreeNode;
-                    pParentRbTreeNode->pLeftChild->pParent = pParentRbTreeNode;
+                    if (pParentRbTreeNode->pLeftChild) pParentRbTreeNode->pLeftChild->pParent = pParentRbTreeNode;
 
                     if (pSiblingRbTreeNode->pParent == NULL)
                     {
@@ -595,7 +643,7 @@ BOOLEAN __deleteDegree1RbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, PRB_TREE_NODE
                     pSiblingRbTreeNode->pParent = pParentRbTreeNode->pParent;
                     pSiblingRbTreeNode->pLeftChild = pParentRbTreeNode;
                     pParentRbTreeNode->pParent = pSiblingRbTreeNode;
-                    pParentRbTreeNode->pRightChild->pParent = pParentRbTreeNode;
+                    if (pParentRbTreeNode->pRightChild) pParentRbTreeNode->pRightChild->pParent = pParentRbTreeNode;
 
                     if (pSiblingRbTreeNode->pParent == NULL)
                     {
@@ -620,8 +668,8 @@ BOOLEAN __deleteDegree1RbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, PRB_TREE_NODE
                     pParentRbTreeNode->pLeftChild = pSiblingRedChildRbTreeNode->pRightChild;
                     pSiblingRedChildRbTreeNode->pLeftChild = pSiblingRbTreeNode;
                     pSiblingRedChildRbTreeNode->pRightChild = pParentRbTreeNode;
-                    pSiblingRbTreeNode->pRightChild->pParent = pSiblingRbTreeNode;
-                    pParentRbTreeNode->pLeftChild->pParent = pParentRbTreeNode;
+                    if (pSiblingRbTreeNode->pRightChild) pSiblingRbTreeNode->pRightChild->pParent = pSiblingRbTreeNode;
+                    if (pParentRbTreeNode->pLeftChild) pParentRbTreeNode->pLeftChild->pParent = pParentRbTreeNode;
                     pSiblingRbTreeNode->pParent = pSiblingRedChildRbTreeNode;
                     pParentRbTreeNode->pParent = pSiblingRedChildRbTreeNode;
 
@@ -639,7 +687,7 @@ BOOLEAN __deleteDegree1RbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, PRB_TREE_NODE
                     (IsTempNodeLeftChild && pSiblingRbTreeNode->Color ==BLACK && NumSiblingRedChildren == 2))
                 {
                     // This will lead to a RL Rotation
-                    pSiblingRbTreeNode->pLeftChild->Color = pParentRbTreeNode->Color;
+                    if (pSiblingRbTreeNode->pLeftChild) pSiblingRbTreeNode->pLeftChild->Color = pParentRbTreeNode->Color;
                     pParentRbTreeNode->Color = BLACK;
 
                     pSiblingRedChildRbTreeNode = pSiblingRbTreeNode->pLeftChild;
@@ -648,8 +696,8 @@ BOOLEAN __deleteDegree1RbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, PRB_TREE_NODE
                     pParentRbTreeNode->pRightChild = pSiblingRedChildRbTreeNode->pLeftChild;
                     pSiblingRedChildRbTreeNode->pRightChild = pSiblingRbTreeNode;
                     pSiblingRedChildRbTreeNode->pLeftChild = pParentRbTreeNode;
-                    pSiblingRbTreeNode->pLeftChild->pParent = pSiblingRbTreeNode;
-                    pParentRbTreeNode->pRightChild->pParent = pParentRbTreeNode;
+                    if (pSiblingRbTreeNode->pLeftChild) pSiblingRbTreeNode->pLeftChild->pParent = pSiblingRbTreeNode;
+                    if (pParentRbTreeNode->pRightChild) pParentRbTreeNode->pRightChild->pParent = pParentRbTreeNode;
                     pSiblingRbTreeNode->pParent = pSiblingRedChildRbTreeNode;
                     pParentRbTreeNode->pParent = pSiblingRedChildRbTreeNode;
 
@@ -657,7 +705,7 @@ BOOLEAN __deleteDegree1RbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, PRB_TREE_NODE
                     {
                         pRbTreeContext->pMinRbTreeNode = pSiblingRedChildRbTreeNode;
                     }
-                    
+
                     break;
                 }
 
@@ -666,36 +714,42 @@ BOOLEAN __deleteDegree1RbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, PRB_TREE_NODE
                 // Lrn where n is the number of red children of v's left child
                 if (!IsTempNodeLeftChild)
                 {
-                    if (pSiblingRbTreeNode->pRightChild->pLeftChild && pSiblingRbTreeNode->pRightChild->pLeftChild->Color == RED &&
-                        pSiblingRbTreeNode->pRightChild->pRightChild && pSiblingRbTreeNode->pRightChild->pRightChild->Color == RED)
+                    if (pSiblingRbTreeNode->pRightChild)
                     {
-                        NumSiblingRightChildRedChildren = 2;
-                    }
-                    else if ((pSiblingRbTreeNode->pRightChild->pLeftChild && pSiblingRbTreeNode->pRightChild->pLeftChild->Color == RED) ||
-                        (pSiblingRbTreeNode->pRightChild->pRightChild && pSiblingRbTreeNode->pRightChild->pRightChild->Color == RED))
-                    {
-                        NumSiblingRightChildRedChildren = 1;
-                    }
-                    else
-                    {
-                        NumSiblingRightChildRedChildren = 0;
+                        if (pSiblingRbTreeNode->pRightChild->pLeftChild && pSiblingRbTreeNode->pRightChild->pLeftChild->Color == RED &&
+                            pSiblingRbTreeNode->pRightChild->pRightChild && pSiblingRbTreeNode->pRightChild->pRightChild->Color == RED)
+                        {
+                            NumSiblingRightChildRedChildren = 2;
+                        }
+                        else if ((pSiblingRbTreeNode->pRightChild->pLeftChild && pSiblingRbTreeNode->pRightChild->pLeftChild->Color == RED) ||
+                            (pSiblingRbTreeNode->pRightChild->pRightChild && pSiblingRbTreeNode->pRightChild->pRightChild->Color == RED))
+                        {
+                            NumSiblingRightChildRedChildren = 1;
+                        }
+                        else
+                        {
+                            NumSiblingRightChildRedChildren = 0;
+                        }
                     }
                 }
                 else
                 {
-                    if (pSiblingRbTreeNode->pLeftChild->pLeftChild && pSiblingRbTreeNode->pLeftChild->pLeftChild->Color == RED &&
-                        pSiblingRbTreeNode->pLeftChild->pRightChild && pSiblingRbTreeNode->pLeftChild->pRightChild->Color == RED)
+                    if (pSiblingRbTreeNode->pLeftChild)
                     {
-                        NumSiblingLeftChildRedChildren = 2;
-                    }
-                    else if ((pSiblingRbTreeNode->pLeftChild->pLeftChild && pSiblingRbTreeNode->pLeftChild->pLeftChild->Color == RED) ||
-                        (pSiblingRbTreeNode->pLeftChild->pRightChild && pSiblingRbTreeNode->pLeftChild->pRightChild->Color == RED))
-                    {
-                        NumSiblingLeftChildRedChildren = 1;
-                    }
-                    else
-                    {
-                        NumSiblingLeftChildRedChildren = 0;
+                        if (pSiblingRbTreeNode->pLeftChild->pLeftChild && pSiblingRbTreeNode->pLeftChild->pLeftChild->Color == RED &&
+                            pSiblingRbTreeNode->pLeftChild->pRightChild && pSiblingRbTreeNode->pLeftChild->pRightChild->Color == RED)
+                        {
+                            NumSiblingLeftChildRedChildren = 2;
+                        }
+                        else if ((pSiblingRbTreeNode->pLeftChild->pLeftChild && pSiblingRbTreeNode->pLeftChild->pLeftChild->Color == RED) ||
+                            (pSiblingRbTreeNode->pLeftChild->pRightChild && pSiblingRbTreeNode->pLeftChild->pRightChild->Color == RED))
+                        {
+                            NumSiblingLeftChildRedChildren = 1;
+                        }
+                        else
+                        {
+                            NumSiblingLeftChildRedChildren = 0;
+                        }
                     }
                 }
 
@@ -704,13 +758,13 @@ BOOLEAN __deleteDegree1RbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, PRB_TREE_NODE
                 {
                     // This will lead to a LL rotation
                     pSiblingRbTreeNode->Color = BLACK;
-                    pSiblingRbTreeNode->pRightChild->Color = RED;
+                    if (pSiblingRbTreeNode->pRightChild) pSiblingRbTreeNode->pRightChild->Color = RED;
 
                     pSiblingRbTreeNode->pParent = pParentRbTreeNode->pParent;
                     pParentRbTreeNode->pLeftChild = pSiblingRbTreeNode->pRightChild;
                     pSiblingRbTreeNode->pRightChild = pParentRbTreeNode;
                     pParentRbTreeNode->pParent = pSiblingRbTreeNode;
-                    pParentRbTreeNode->pLeftChild->pParent = pParentRbTreeNode;
+                    if (pParentRbTreeNode->pLeftChild) pParentRbTreeNode->pLeftChild->pParent = pParentRbTreeNode;
 
                     if (pSiblingRbTreeNode->pParent == NULL)
                     {
@@ -725,13 +779,13 @@ BOOLEAN __deleteDegree1RbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, PRB_TREE_NODE
                 {
                     // This will lead to a RR rotation
                     pSiblingRbTreeNode->Color = BLACK;
-                    pSiblingRbTreeNode->pLeftChild->Color = RED;
+                    if (pSiblingRbTreeNode->pLeftChild) pSiblingRbTreeNode->pLeftChild->Color = RED;
 
                     pSiblingRbTreeNode->pParent = pParentRbTreeNode->pParent;
                     pParentRbTreeNode->pRightChild = pSiblingRbTreeNode->pLeftChild;
                     pSiblingRbTreeNode->pLeftChild = pParentRbTreeNode;
                     pParentRbTreeNode->pParent = pSiblingRbTreeNode;
-                    pParentRbTreeNode->pRightChild->pParent = pParentRbTreeNode;
+                    if (pParentRbTreeNode->pRightChild) pParentRbTreeNode->pRightChild->pParent = pParentRbTreeNode;
 
                     if (pSiblingRbTreeNode->pParent == NULL)
                     {
@@ -754,8 +808,8 @@ BOOLEAN __deleteDegree1RbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, PRB_TREE_NODE
                     pParentRbTreeNode->pLeftChild = pSiblingRightChildRbTreeNode->pRightChild;
                     pSiblingRightChildRbTreeNode->pLeftChild = pSiblingRbTreeNode;
                     pSiblingRightChildRbTreeNode->pRightChild = pParentRbTreeNode;
-                    pSiblingRbTreeNode->pRightChild->pParent = pSiblingRbTreeNode;
-                    pParentRbTreeNode->pLeftChild->pParent = pParentRbTreeNode;
+                    if (pSiblingRbTreeNode->pRightChild) pSiblingRbTreeNode->pRightChild->pParent = pSiblingRbTreeNode;
+                    if (pParentRbTreeNode->pLeftChild) pParentRbTreeNode->pLeftChild->pParent = pParentRbTreeNode;
                     pSiblingRbTreeNode->pParent = pSiblingRightChildRbTreeNode;
                     pParentRbTreeNode->pParent = pSiblingRightChildRbTreeNode;
 
@@ -780,8 +834,8 @@ BOOLEAN __deleteDegree1RbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, PRB_TREE_NODE
                     pParentRbTreeNode->pRightChild = pSiblingLeftChildRbTreeNode->pLeftChild;
                     pSiblingLeftChildRbTreeNode->pRightChild = pSiblingRbTreeNode;
                     pSiblingLeftChildRbTreeNode->pLeftChild = pParentRbTreeNode;
-                    pSiblingRbTreeNode->pLeftChild->pParent = pSiblingRbTreeNode;
-                    pParentRbTreeNode->pRightChild->pParent = pParentRbTreeNode;
+                    if (pSiblingRbTreeNode->pLeftChild) pSiblingRbTreeNode->pLeftChild->pParent = pSiblingRbTreeNode;
+                    if (pParentRbTreeNode->pRightChild) pParentRbTreeNode->pRightChild->pParent = pParentRbTreeNode;
                     pSiblingRbTreeNode->pParent = pSiblingLeftChildRbTreeNode;
                     pParentRbTreeNode->pParent = pSiblingLeftChildRbTreeNode;
 
@@ -807,8 +861,8 @@ BOOLEAN __deleteDegree1RbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, PRB_TREE_NODE
                     pParentRbTreeNode->pLeftChild = pSiblingRightChildRedChildRbTreeNode->pRightChild;
                     pSiblingRightChildRedChildRbTreeNode->pLeftChild = pSiblingRbTreeNode;
                     pSiblingRightChildRedChildRbTreeNode->pRightChild = pParentRbTreeNode;
-                    pSiblingRightChildRbTreeNode->pRightChild->pParent = pSiblingRightChildRbTreeNode;
-                    pParentRbTreeNode->pLeftChild->pParent = pParentRbTreeNode;
+                    if (pSiblingRightChildRbTreeNode->pRightChild) pSiblingRightChildRbTreeNode->pRightChild->pParent = pSiblingRightChildRbTreeNode;
+                    if (pParentRbTreeNode->pLeftChild) pParentRbTreeNode->pLeftChild->pParent = pParentRbTreeNode;
                     pSiblingRbTreeNode->pParent = pSiblingRightChildRedChildRbTreeNode;
                     pParentRbTreeNode->pParent = pSiblingRightChildRedChildRbTreeNode;
 
@@ -834,8 +888,8 @@ BOOLEAN __deleteDegree1RbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, PRB_TREE_NODE
                     pParentRbTreeNode->pRightChild = pSiblingLeftChildRedChildRbTreeNode->pLeftChild;
                     pSiblingLeftChildRedChildRbTreeNode->pRightChild = pSiblingRbTreeNode;
                     pSiblingLeftChildRedChildRbTreeNode->pLeftChild = pParentRbTreeNode;
-                    pSiblingLeftChildRbTreeNode->pLeftChild->pParent = pSiblingLeftChildRbTreeNode;
-                    pParentRbTreeNode->pRightChild->pParent = pParentRbTreeNode;
+                    if (pSiblingLeftChildRbTreeNode->pLeftChild) pSiblingLeftChildRbTreeNode->pLeftChild->pParent = pSiblingLeftChildRbTreeNode;
+                    if (pParentRbTreeNode->pRightChild) pParentRbTreeNode->pRightChild->pParent = pParentRbTreeNode;
                     pSiblingRbTreeNode->pParent = pSiblingLeftChildRedChildRbTreeNode;
                     pParentRbTreeNode->pParent = pSiblingLeftChildRedChildRbTreeNode;
 

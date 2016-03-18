@@ -85,6 +85,10 @@ BOOLEAN __parseInputFile(PEVENT_COUNTER_CONTEXT pEventCounterContext)
     pRbTreeContext->RbTreeFnTbl.deleteRbTreeNode(pRbTreeContext, 11);
     pRbTreeContext->RbTreeFnTbl.deleteRbTreeNode(pRbTreeContext, 3);
     pRbTreeContext->RbTreeFnTbl.deleteRbTreeNode(pRbTreeContext, 2);
+    pRbTreeContext->RbTreeFnTbl.deleteRbTreeNode(pRbTreeContext, 5);
+    pRbTreeContext->RbTreeFnTbl.deleteRbTreeNode(pRbTreeContext, 1);
+    pRbTreeContext->RbTreeFnTbl.deleteRbTreeNode(pRbTreeContext, 7);
+
 
     return TRUE;
 }

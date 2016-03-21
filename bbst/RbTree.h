@@ -23,8 +23,14 @@ typedef struct _RB_TREE_NODE
 typedef struct _RB_TREE_CONTEXT
 {
     PRB_TREE_NODE       pMinRbTreeNode;
+    PRB_TREE_NODE       pRbTreeNodeArrayList;
+    UINT                NumNodesRbTree;
+    UINT                RbTreeHeight;
     struct _RB_TREE_FN_TBL
     {
+        VOID(*initializeRbTreeNodeArrayList)(struct _RB_TREE_CONTEXT *pRbTreeContext, UINT Length);
+        VOID(*insertRbTreeNodeArrayList)(struct _RB_TREE_CONTEXT *pRbTreeContext, INT ID, INT Count, UINT Index);
+        VOID(*initializeRbTree)(struct _RB_TREE_CONTEXT *pRbTreeContext);
         PRB_TREE_NODE(*insertRbTreeNode) (struct _RB_TREE_CONTEXT *pRbTreeContext, INT ID, INT Count);
         VOID(*deleteRbTreeNode) (struct _RB_TREE_CONTEXT *pRbTreeContext, PRB_TREE_NODE pRbTreeNode);
         PRB_TREE_NODE(*findRbTreeNode) (struct _RB_TREE_CONTEXT *pRbTreeContext, INT ID);

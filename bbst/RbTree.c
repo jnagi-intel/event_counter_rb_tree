@@ -14,6 +14,11 @@ VOID            __freeRbTreeNode(PRB_TREE_NODE *ppRbTreeNode);
 VOID            __deleteDegree1RbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, PRB_TREE_NODE pRbTreeNode, PRB_TREE_NODE pChildRbTreeNode);
 PRB_TREE_NODE   __getNextIDRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, PRB_TREE_NODE pRbTreeNode);
 PRB_TREE_NODE   __getPrevIDRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, PRB_TREE_NODE pRbTreeNode);
+VOID            __initializeRbTreeNodeArrayList(struct _RB_TREE_CONTEXT *pRbTreeContext, UINT Length);
+VOID            __insertRbTreeNodeArrayList(struct _RB_TREE_CONTEXT *pRbTreeContext, INT ID, INT Count, UINT Index);
+VOID            __initializeRbTree(struct _RB_TREE_CONTEXT *pRbTreeContext);
+PRB_TREE_NODE   __sortedArrayToRbTree(PRB_TREE_CONTEXT pRbTreeContext, INT StartIndex, INT EndIndex, UINT Height);
+
 
 // createRbTreeContext()
 // This function allocates memory for the context and initilize the variables and function pointers
@@ -28,12 +33,15 @@ PRB_TREE_CONTEXT createRbTreeContext()
     pRbTreeContext->pMinRbTreeNode = NULL;
 
     // Initilize the function table
-    pRbTreeContext->stRbTreeFnTbl.insertRbTreeNode      = __insertRbTreeNode;
-    pRbTreeContext->stRbTreeFnTbl.deleteRbTreeNode      = __deleteRbTreeNode;
-    pRbTreeContext->stRbTreeFnTbl.findRbTreeNode        = __findRbTreeNode;
-    pRbTreeContext->stRbTreeFnTbl.getNextIDRbTreeNode   = __getNextIDRbTreeNode;
-    pRbTreeContext->stRbTreeFnTbl.getPrevIDRbTreeNode   = __getPrevIDRbTreeNode;
-
+    pRbTreeContext->stRbTreeFnTbl.insertRbTreeNode              = __insertRbTreeNode;
+    pRbTreeContext->stRbTreeFnTbl.deleteRbTreeNode              = __deleteRbTreeNode;
+    pRbTreeContext->stRbTreeFnTbl.findRbTreeNode                = __findRbTreeNode;
+    pRbTreeContext->stRbTreeFnTbl.getNextIDRbTreeNode           = __getNextIDRbTreeNode;
+    pRbTreeContext->stRbTreeFnTbl.getPrevIDRbTreeNode           = __getPrevIDRbTreeNode;
+    pRbTreeContext->stRbTreeFnTbl.initializeRbTreeNodeArrayList = __initializeRbTreeNodeArrayList;
+    pRbTreeContext->stRbTreeFnTbl.insertRbTreeNodeArrayList     = __insertRbTreeNodeArrayList;
+    pRbTreeContext->stRbTreeFnTbl.initializeRbTree              = __initializeRbTree;
+    
     return pRbTreeContext;
 }
 
@@ -41,7 +49,19 @@ PRB_TREE_CONTEXT createRbTreeContext()
 // This function deallocates and frees up the context
 VOID destroyRbTreeContext(PRB_TREE_CONTEXT *ppRbTreeContext)
 {
+    if ((*ppRbTreeContext)->pRbTreeNodeArrayList)
+    {
+        free((*ppRbTreeContext)->pRbTreeNodeArrayList);
+        (*ppRbTreeContext)->pRbTreeNodeArrayList = NULL;
+    }
 
+    (*ppRbTreeContext)->pMinRbTreeNode = NULL;
+
+    if (*ppRbTreeContext)
+    {
+        free(*ppRbTreeContext);
+        *ppRbTreeContext = NULL;
+    }
 }
 
 // __buildRbTreeNode()
@@ -489,7 +509,7 @@ VOID __freeRbTreeNode(PRB_TREE_NODE *ppRbTreeNode)
         (*ppRbTreeNode)->pRightChild    = NULL;
         (*ppRbTreeNode)->pParent        = NULL;
 
-        free(*ppRbTreeNode);
+        // Dont free the memory it will be done while clearing the Array List
         *ppRbTreeNode = NULL;
     }
 }
@@ -1013,6 +1033,80 @@ PRB_TREE_NODE __getPrevIDRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, PRB
         return pTempRbTreeNode->pParent;
     }
 }
+
+// __initializeRbTreeNodeArrayList()
+// This function allocates memory for the array list
+VOID __initializeRbTreeNodeArrayList(struct _RB_TREE_CONTEXT *pRbTreeContext, UINT Length)
+{
+    pRbTreeContext->pRbTreeNodeArrayList    = (PRB_TREE_NODE)malloc(sizeof(RB_TREE_NODE) * Length);
+    pRbTreeContext->NumNodesRbTree          = Length;
+}
+
+// __insertRbTreeNodeArrayList()
+// This funcion builds the RbTree Node and adds it to the end of the list
+VOID __insertRbTreeNodeArrayList(struct _RB_TREE_CONTEXT *pRbTreeContext, INT ID, INT Count, UINT Index)
+{
+    PRB_TREE_NODE   pRbTreeNode = NULL;
+
+    // First build the Red Black Tree Node and color it black
+    pRbTreeNode = __buildRbTreeNode(ID, Count);
+    pRbTreeNode->Color = BLACK;
+
+    // Add it to the List 
+    memcpy(&pRbTreeContext->pRbTreeNodeArrayList[Index], pRbTreeNode, sizeof(RB_TREE_NODE));
+
+    // Free up the memory
+    free(pRbTreeNode);
+}
+
+// __initializeRbTree()
+// This function builds the Rb Tree from the Array list in O(n) time
+VOID __initializeRbTree(struct _RB_TREE_CONTEXT *pRbTreeContext)
+{
+    // Get the height of the RB Tree 
+    pRbTreeContext->RbTreeHeight = (UINT)(log(pRbTreeContext->NumNodesRbTree) / log(2));
+
+    // call the sorted array to rb tree function to build the RB Tree recursively 
+    pRbTreeContext->pMinRbTreeNode = __sortedArrayToRbTree(pRbTreeContext, 0, pRbTreeContext->NumNodesRbTree - 1, 0);
+}
+
+// __sortedArrayToRbTree()
+// THis is the recursive function to build the RB Tree from a sorted array list
+PRB_TREE_NODE __sortedArrayToRbTree(PRB_TREE_CONTEXT pRbTreeContext, INT StartIndex, INT EndIndex, UINT Height)
+{
+    PRB_TREE_NODE   pRbTreeNode = NULL;
+    INT            MidIndex = 0;
+
+    // Get the element in the middle index, that will be the root. 
+    // Recurse again for left child and right child
+    if (StartIndex > EndIndex)
+    {
+        return NULL;
+    }
+    else
+    {
+        // Get the root node
+        MidIndex = StartIndex + (EndIndex - StartIndex) / 2;
+        pRbTreeNode = &pRbTreeContext->pRbTreeNodeArrayList[MidIndex];
+
+        // Recurse for left and right child
+        pRbTreeNode->pLeftChild = __sortedArrayToRbTree(pRbTreeContext, StartIndex, MidIndex - 1, Height + 1);
+        pRbTreeNode->pRightChild = __sortedArrayToRbTree(pRbTreeContext, MidIndex + 1, EndIndex, Height + 1);
+
+        // Update the parent pointers if need to
+        if (pRbTreeNode->pLeftChild) pRbTreeNode->pLeftChild->pParent = pRbTreeNode;
+        if (pRbTreeNode->pRightChild) pRbTreeNode->pRightChild->pParent = pRbTreeNode;
+
+        // Color the nodes in the last level Red to maintain the Red Black Tree Property
+        if (Height == pRbTreeContext->RbTreeHeight)
+        {
+            pRbTreeNode->Color = RED;
+        }
+
+        return pRbTreeNode;
+    }
+}
+
 
 
 

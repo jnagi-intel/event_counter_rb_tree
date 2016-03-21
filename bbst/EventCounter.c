@@ -138,7 +138,7 @@ BOOLEAN __parseInputFile(PEVENT_COUNTER_CONTEXT pEventCounterContext)
     PRB_TREE_CONTEXT    pRbTreeContext = pEventCounterContext->pRbTreeContext;
     UINT                EventID = 0;
     UINT                EventCount = 0;
-    INT                 Count = 0;
+    UINT                 Count = 0;
     
     // Open with the file with the given filename in the command 
     pEventCounterContext->InputFileHandle = fopen(pEventCounterContext->EventCounterArgs.InputFilename, "r");
@@ -151,19 +151,21 @@ BOOLEAN __parseInputFile(PEVENT_COUNTER_CONTEXT pEventCounterContext)
     // Read the number of ID's from the first line of the file 
     fscanf(pEventCounterContext->InputFileHandle, "%u", &pEventCounterContext->NumEvents);
 
+    // Initialize the Red Black Tree Array List 
+    pRbTreeContext->stRbTreeFnTbl.initializeRbTreeNodeArrayList(pRbTreeContext, pEventCounterContext->NumEvents);
+
     // Read remaining events with their counts and insert them in the red black tree 
-    Count = pEventCounterContext->NumEvents;
-    while(Count-- > 0)
+    while (Count++ < pEventCounterContext->NumEvents)
     {
         // Read the line and get the Event ID and count 
         fscanf(pEventCounterContext->InputFileHandle, "%u %u", &EventID, &EventCount);
 
-        // Insert this to the red black tree
-        if (!pRbTreeContext->stRbTreeFnTbl.insertRbTreeNode(pRbTreeContext, EventID, EventCount))
-        {
-            return FALSE;
-        }
+        // Insert this to the tail of the Red Black Tree Array List
+        pRbTreeContext->stRbTreeFnTbl.insertRbTreeNodeArrayList(pRbTreeContext, EventID, EventCount, Count - 1);
     }
+
+    // Now build the Red Black Tree 
+    pRbTreeContext->stRbTreeFnTbl.initializeRbTree(pRbTreeContext);
 
     return TRUE;
 }

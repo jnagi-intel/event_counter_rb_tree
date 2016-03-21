@@ -915,9 +915,39 @@ VOID __deleteDegree1RbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, PRB_TREE_NODE pR
 // It assumes that current Node exists
 PRB_TREE_NODE __getNextIDRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, PRB_TREE_NODE pRbTreeNode)
 {
+    PRB_TREE_NODE   pTempRbTreeNode = NULL;
+
     // The node with greater ID will be either the node with smallest ID in the right subtree 
     // or if the right subtree is empty than the parent 
+    if (pRbTreeNode->pRightChild != NULL)
+    {
+        pTempRbTreeNode = pRbTreeNode->pRightChild;
+        while (pTempRbTreeNode->pLeftChild != NULL)
+        {
+            pTempRbTreeNode = pTempRbTreeNode->pLeftChild;
+        }
 
+        return pTempRbTreeNode;
+    }
+    else
+    {
+        // check for parent if its a left child, if thats NULL then there is no node with ID greater
+        // recurse to top of the tree, if we hit the root then no event exists
+        pTempRbTreeNode = pRbTreeNode;
+        while (pTempRbTreeNode->pParent != NULL)
+        {
+            if (pTempRbTreeNode->pParent->pLeftChild == pTempRbTreeNode)
+            {
+                break;
+            }
+            else
+            {
+                pTempRbTreeNode = pTempRbTreeNode->pParent;
+            }
+        }
+
+        return pTempRbTreeNode->pParent;
+    }
 }
 
 // __getPrevIDRbTreeNode()
@@ -925,7 +955,39 @@ PRB_TREE_NODE __getNextIDRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, PRB
 // It assumes that current Node exists
 PRB_TREE_NODE __getPrevIDRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, PRB_TREE_NODE pRbTreeNode)
 {
+    PRB_TREE_NODE   pTempRbTreeNode = NULL;
 
+    // The node with lesser ID will be either the node with largest ID in the left subtree 
+    // or if the left subtree is empty than the parent 
+    if (pRbTreeNode->pLeftChild != NULL)
+    {
+        pTempRbTreeNode = pRbTreeNode->pLeftChild;
+        while (pTempRbTreeNode->pRightChild != NULL)
+        {
+            pTempRbTreeNode = pTempRbTreeNode->pRightChild;
+        }
+
+        return pTempRbTreeNode;
+    }
+    else
+    {
+        // check for parent if its a right child, if thats NULL then there is no node with ID greater
+        // recurse to top of the tree, if we hit the root then no event exists
+        pTempRbTreeNode = pRbTreeNode;
+        while (pTempRbTreeNode->pParent != NULL)
+        {
+            if (pTempRbTreeNode->pParent->pRightChild == pTempRbTreeNode)
+            {
+                break;
+            }
+            else
+            {
+                pTempRbTreeNode = pTempRbTreeNode->pParent;
+            }
+        }
+
+        return pTempRbTreeNode->pParent;
+    }
 }
 
 

@@ -211,6 +211,7 @@ PRB_TREE_NODE __insertRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, INT ID
             pParentRbTreeNode->pParent = pGrandParentRbTreeNode->pParent;
             pParentRbTreeNode->pRightChild = pGrandParentRbTreeNode;
             pGrandParentRbTreeNode->pParent = pParentRbTreeNode;
+            if (pGrandParentRbTreeNode->pLeftChild) pGrandParentRbTreeNode->pLeftChild->pParent = pGrandParentRbTreeNode;
 
             break;
         }
@@ -250,6 +251,9 @@ PRB_TREE_NODE __insertRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, INT ID
             pParentRbTreeNode->pParent = pTempRbTreeNode;
             pGrandParentRbTreeNode->pParent = pTempRbTreeNode;
 
+            if (pParentRbTreeNode->pRightChild) pParentRbTreeNode->pRightChild->pParent = pParentRbTreeNode;
+            if (pGrandParentRbTreeNode->pLeftChild) pGrandParentRbTreeNode->pLeftChild->pParent = pGrandParentRbTreeNode;
+
             break;
         }
 
@@ -282,6 +286,7 @@ PRB_TREE_NODE __insertRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, INT ID
             pParentRbTreeNode->pParent = pGrandParentRbTreeNode->pParent;
             pParentRbTreeNode->pLeftChild = pGrandParentRbTreeNode;
             pGrandParentRbTreeNode->pParent = pParentRbTreeNode;
+            if (pGrandParentRbTreeNode->pRightChild) pGrandParentRbTreeNode->pRightChild->pParent = pGrandParentRbTreeNode;
 
             break;
         }
@@ -321,6 +326,9 @@ PRB_TREE_NODE __insertRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, INT ID
             pParentRbTreeNode->pParent = pTempRbTreeNode;
             pGrandParentRbTreeNode->pParent = pTempRbTreeNode;
 
+            if (pParentRbTreeNode->pRightChild) pParentRbTreeNode->pRightChild->pParent = pParentRbTreeNode;
+            if (pGrandParentRbTreeNode->pLeftChild) pGrandParentRbTreeNode->pLeftChild->pParent = pGrandParentRbTreeNode;
+
             break;
         }
 
@@ -335,7 +343,9 @@ PRB_TREE_NODE __insertRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, INT ID
 }
 
 // __findRbTreeNode()
-// This function finds the Rb Tree Node with the particular ID in the Reb Black Tree
+// This function finds the Rb Tree Node with the particular ID in the Red Black Tree
+// or if the ID doesnt exist returns the node with closest ID 
+// Will return NULL if root is NULL
 PRB_TREE_NODE __findRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, INT ID)
 {
     PRB_TREE_NODE    pTempRbTreeNode = NULL;
@@ -344,7 +354,7 @@ PRB_TREE_NODE __findRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, INT ID)
     {
         // Verifying that the root of the tree exists, now recurse!
         pTempRbTreeNode = pRbTreeContext->pMinRbTreeNode;
-        while (pTempRbTreeNode != NULL)
+        while (TRUE)
         {
             if (ID == pTempRbTreeNode->ID)
             {
@@ -352,11 +362,25 @@ PRB_TREE_NODE __findRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, INT ID)
             }
             else if (ID < pTempRbTreeNode->ID)
             {
-                pTempRbTreeNode = pTempRbTreeNode->pLeftChild;
+                if (pTempRbTreeNode->pLeftChild != NULL)
+                {
+                    pTempRbTreeNode = pTempRbTreeNode->pLeftChild;
+                }
+                else
+                {
+                    break;
+                }
             }
             else
             {
-                pTempRbTreeNode = pTempRbTreeNode->pRightChild;
+                if (pTempRbTreeNode->pRightChild != NULL)
+                {
+                    pTempRbTreeNode = pTempRbTreeNode->pRightChild;
+                }
+                else
+                {
+                    break;
+                }
             }
         }
     }

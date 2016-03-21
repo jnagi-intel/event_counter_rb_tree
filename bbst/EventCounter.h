@@ -23,7 +23,4 @@ typedef struct _EVENT_COUNTER_CONTEXT
     RB_TREE_CONTEXT     *pRbTreeContext;
 }EVENT_COUNTER_CONTEXT, *PEVENT_COUNTER_CONTEXT;
 
-// Function Prototypes
-
-
 #endif

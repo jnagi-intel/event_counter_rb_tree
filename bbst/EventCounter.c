@@ -16,8 +16,7 @@ VOID                    __getPrevEvent(PEVENT_COUNTER_CONTEXT pEventCounterConte
 VOID                    __getNextEvent(PEVENT_COUNTER_CONTEXT pEventCounterContext, INT ID);
 VOID                    __getTotalCountInRange(PEVENT_COUNTER_CONTEXT pEventCounterContext, INT ID1, INT ID2);
 
-
-
+// Main Function for the project
 INT main(INT argc, CHAR *argv[])
 {
     PEVENT_COUNTER_CONTEXT  pEventCounterContext = NULL;
@@ -120,9 +119,20 @@ INT main(INT argc, CHAR *argv[])
 
     } while (FALSE);
 
+    if (!RetStatus)
+    {
+        if (pEventCounterContext)
+        {
+            __destroyEventCounterContext(&pEventCounterContext);
+        }
+    }
+
     return RetStatus;
 }
 
+// __parseInputFile()
+// This function parses the input file with event ID and count information 
+// Also builds up the Red black tree from IDs and Counts.
 BOOLEAN __parseInputFile(PEVENT_COUNTER_CONTEXT pEventCounterContext)
 {
     PRB_TREE_CONTEXT    pRbTreeContext = pEventCounterContext->pRbTreeContext;
@@ -158,6 +168,8 @@ BOOLEAN __parseInputFile(PEVENT_COUNTER_CONTEXT pEventCounterContext)
     return TRUE;
 }
 
+// __parseEventCounterArgs()
+// This function gets the filename from the args and saves it to the event counter context
 BOOLEAN __parseEventCounterArgs(PEVENT_COUNTER_CONTEXT pEventCounterContext, CHAR *argv[])
 {
     UINT    FilenameLength = 0;
@@ -183,6 +195,8 @@ BOOLEAN __parseEventCounterArgs(PEVENT_COUNTER_CONTEXT pEventCounterContext, CHA
     return bRetStatus;
 }
 
+// __createEventCounterContext()
+// This function allocates memory for event counter context and also initializes variables
 PEVENT_COUNTER_CONTEXT __createEventCounterContext()
 {
     PEVENT_COUNTER_CONTEXT  pEventCounterContext = NULL;
@@ -194,6 +208,8 @@ PEVENT_COUNTER_CONTEXT __createEventCounterContext()
     return pEventCounterContext;
 }
 
+// __destroyEventCounterContext()
+// This function deallocates and frees up the event counter context
 VOID __destroyEventCounterContext(PEVENT_COUNTER_CONTEXT *ppEventCounterContext)
 {
     // Destroy Rb Tree Context first 
@@ -220,7 +236,7 @@ VOID __increaseEventCount(PEVENT_COUNTER_CONTEXT pEventCounterContext, INT ID, I
 
     if (pRbTreeNode)
     {
-        printf("%d", pRbTreeNode->Count);
+        printf("%d\n", pRbTreeNode->Count);
     }
 }
 
@@ -236,10 +252,10 @@ VOID __reduceEventCount(PEVENT_COUNTER_CONTEXT pEventCounterContext, INT ID, INT
     // First get the event from the red black tree to be deleted 
     pRbTreeNode = pRbTreeContext->stRbTreeFnTbl.findRbTreeNode(pRbTreeContext, ID);
 
-    if (pRbTreeNode == NULL)
+    if (pRbTreeNode == NULL || pRbTreeNode->ID != ID)
     {
         // Event doesnt exist!
-        printf("0");
+        printf("0\n");
     }
     else
     {
@@ -250,12 +266,12 @@ VOID __reduceEventCount(PEVENT_COUNTER_CONTEXT pEventCounterContext, INT ID, INT
         if (pRbTreeNode->Count <= 0)
         {
             pRbTreeContext->stRbTreeFnTbl.deleteRbTreeNode(pRbTreeContext, pRbTreeNode);
-            printf("0");
+            printf("0\n");
         }
         else
         {
             // Print the new count
-            printf("%d", pRbTreeNode->Count);
+            printf("%d\n", pRbTreeNode->Count);
         }
     }
 }
@@ -270,14 +286,14 @@ VOID __getEventCount(PEVENT_COUNTER_CONTEXT pEventCounterContext, INT ID)
     // Prints the count
     pRbTreeNode = pRbTreeContext->stRbTreeFnTbl.findRbTreeNode(pRbTreeContext, ID);
 
-    if (pRbTreeNode)
+    if (pRbTreeNode && pRbTreeNode->ID == ID)
     {
-        printf("%d", pRbTreeNode->Count);
+        printf("%d\n", pRbTreeNode->Count);
     }
     else
     {
         // Event not found in the Red Black Tree
-        printf("0");
+        printf("0\n");
     }
 }
 
@@ -292,6 +308,11 @@ VOID __getTotalCountInRange(PEVENT_COUNTER_CONTEXT pEventCounterContext, INT ID1
     // First search for the Event ID with the given ID1
     pRbTreeNode = pRbTreeContext->stRbTreeFnTbl.findRbTreeNode(pRbTreeContext, ID1);
 
+    if (pRbTreeNode->ID < ID1)
+    {
+        pRbTreeNode = pRbTreeContext->stRbTreeFnTbl.getNextIDRbTreeNode(pRbTreeContext, pRbTreeNode);
+    }
+
     // Add the Count and use getNextID to find the next ID till we reach ID2
     // Assuming ID2 exists! 
     if (pRbTreeNode)
@@ -304,7 +325,7 @@ VOID __getTotalCountInRange(PEVENT_COUNTER_CONTEXT pEventCounterContext, INT ID1
     }
 
     // Print the total Count 
-    printf("%d", TotalCount);
+    printf("%d\n", TotalCount);
 }
 
 // __getNextEvent()
@@ -321,17 +342,20 @@ VOID __getNextEvent(PEVENT_COUNTER_CONTEXT pEventCounterContext, INT ID)
     if (pRbTreeNode)
     {
         // Get the event with next ID
-        pRbTreeNode = pRbTreeContext->stRbTreeFnTbl.getNextIDRbTreeNode(pRbTreeContext, pRbTreeNode);
+        if (pRbTreeNode->ID <= ID)
+        {
+            pRbTreeNode = pRbTreeContext->stRbTreeFnTbl.getNextIDRbTreeNode(pRbTreeContext, pRbTreeNode);
+        }
 
         if (pRbTreeNode)
         {
             // Print the ID and the count
-            printf("%d %d", pRbTreeNode->ID, pRbTreeNode->Count);
+            printf("%d %d\n", pRbTreeNode->ID, pRbTreeNode->Count);
         }
         else
         {
             // No event with greater ID
-            printf("0 0");
+            printf("0 0\n");
         }
     }
     else
@@ -355,17 +379,20 @@ VOID __getPrevEvent(PEVENT_COUNTER_CONTEXT pEventCounterContext, INT ID)
     if (pRbTreeNode)
     {
         // Get the event with previous ID
-        pRbTreeNode = pRbTreeContext->stRbTreeFnTbl.getPrevIDRbTreeNode(pRbTreeContext, pRbTreeNode);
+        if (pRbTreeNode->ID >= ID)
+        {
+            pRbTreeNode = pRbTreeContext->stRbTreeFnTbl.getPrevIDRbTreeNode(pRbTreeContext, pRbTreeNode);
+        }
 
         if (pRbTreeNode)
         {
             // Print the ID and the count
-            printf("%d %d", pRbTreeNode->ID, pRbTreeNode->Count);
+            printf("%d %d\n", pRbTreeNode->ID, pRbTreeNode->Count);
         }
         else
         {
             // No event with lesser ID
-            printf("0 0");
+            printf("0 0\n");
         }
     }
     else

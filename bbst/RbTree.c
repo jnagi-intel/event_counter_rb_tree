@@ -6,16 +6,17 @@
 #include "RbTree.h"
 
 // Local Function Declarations
-BOOLEAN         __insertRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, UINT ID, UINT Count);
-BOOLEAN         __deleteRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, UINT ID);
-PRB_TREE_NODE   __buildRbTreeNode(UINT ID, UINT Count);
-PRB_TREE_NODE   __findRbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, UINT ID);
+PRB_TREE_NODE   __insertRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, INT ID, INT Count);
+VOID            __deleteRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, PRB_TREE_NODE pRbTreeNode);
+PRB_TREE_NODE   __buildRbTreeNode(INT ID, INT Count);
+PRB_TREE_NODE   __findRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, INT ID);
 VOID            __freeRbTreeNode(PRB_TREE_NODE *ppRbTreeNode);
-BOOLEAN         __deleteDegree1RbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, PRB_TREE_NODE pRbTreeNode, PRB_TREE_NODE pChildRbTreeNode);
+VOID            __deleteDegree1RbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, PRB_TREE_NODE pRbTreeNode, PRB_TREE_NODE pChildRbTreeNode);
+PRB_TREE_NODE   __getNextIDRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, PRB_TREE_NODE pRbTreeNode);
+PRB_TREE_NODE   __getPrevIDRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, PRB_TREE_NODE pRbTreeNode);
 
 // createRbTreeContext()
-// This function allocates memory for the context 
-// and initilize the variables and function pointers
+// This function allocates memory for the context and initilize the variables and function pointers
 PRB_TREE_CONTEXT createRbTreeContext()
 {
     PRB_TREE_CONTEXT    pRbTreeContext = NULL;
@@ -27,8 +28,11 @@ PRB_TREE_CONTEXT createRbTreeContext()
     pRbTreeContext->pMinRbTreeNode = NULL;
 
     // Initilize the function table
-    pRbTreeContext->RbTreeFnTbl.insertRbTreeNode = __insertRbTreeNode;
-    pRbTreeContext->RbTreeFnTbl.deleteRbTreeNode = __deleteRbTreeNode;
+    pRbTreeContext->stRbTreeFnTbl.insertRbTreeNode      = __insertRbTreeNode;
+    pRbTreeContext->stRbTreeFnTbl.deleteRbTreeNode      = __deleteRbTreeNode;
+    pRbTreeContext->stRbTreeFnTbl.findRbTreeNode        = __findRbTreeNode;
+    pRbTreeContext->stRbTreeFnTbl.getNextIDRbTreeNode   = __getNextIDRbTreeNode;
+    pRbTreeContext->stRbTreeFnTbl.getPrevIDRbTreeNode   = __getPrevIDRbTreeNode;
 
     return pRbTreeContext;
 }
@@ -41,9 +45,8 @@ VOID destroyRbTreeContext(PRB_TREE_CONTEXT *ppRbTreeContext)
 }
 
 // __buildRbTreeNode()
-// This function allocates and initializes the Rb Tree Node 
-// from ID and Count
-PRB_TREE_NODE __buildRbTreeNode(UINT ID, UINT Count)
+// This function allocates and initializes the Rb Tree Node from ID and Count
+PRB_TREE_NODE __buildRbTreeNode(INT ID, INT Count)
 {
     PRB_TREE_NODE   pRbTreeNode = NULL;
 
@@ -60,10 +63,9 @@ PRB_TREE_NODE __buildRbTreeNode(UINT ID, UINT Count)
 }
 
 // __insertRbTreeNode()
-// This function inserts the Rb Tree node in the 
-// Red black Tree considering all the scenrios and also 
+// This function inserts the Rb Tree node in the Red black Tree considering all the scenrios and also 
 // rebalances the tree maintaining the Red Black property
-BOOLEAN __insertRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, UINT ID, UINT Count)
+PRB_TREE_NODE __insertRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, INT ID, INT Count)
 {
     PRB_TREE_NODE   pNewRbTreeNode          = NULL;
     PRB_TREE_NODE   pTempRbTreeNode         = NULL;
@@ -73,20 +75,27 @@ BOOLEAN __insertRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, UINT ID, UIN
     BOOLEAN         IsTempNodeLeftChild     = FALSE;
     BOOLEAN         IsParentNodeLeftChild   = FALSE;
 
-    // Build the Red Black tree node from ID and Count 
-    pNewRbTreeNode = __buildRbTreeNode(ID, Count);
-    
-    // Insert the Red Black Tree Node like inserting in a Min Tree
+    // First check if the node already exists or not
     if (pRbTreeContext->pMinRbTreeNode == NULL)
     {
-        pRbTreeContext->pMinRbTreeNode = pNewRbTreeNode;
+        // Node doesnt exist! Build a node and add it to the root of the tree and return
+        pRbTreeContext->pMinRbTreeNode = __buildRbTreeNode(ID, Count);
+        pNewRbTreeNode = pRbTreeContext->pMinRbTreeNode;
     }
     else
     {
+        // search for the node, if it doesnt exist we will hit a NULL node
         pTempRbTreeNode = pRbTreeContext->pMinRbTreeNode;
         while (pTempRbTreeNode != NULL)
         {
-            if (pNewRbTreeNode->ID <= pTempRbTreeNode->ID)
+            if (ID == pTempRbTreeNode->ID)
+            {
+                // Node already exists! 
+                // Add the Count to the existing Count of the Node and return 
+                pTempRbTreeNode->Count += Count;
+                return pTempRbTreeNode;
+            }
+            else if (ID < pTempRbTreeNode->ID)
             {
                 if (pTempRbTreeNode->pLeftChild != NULL)
                 {
@@ -94,8 +103,10 @@ BOOLEAN __insertRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, UINT ID, UIN
                 }
                 else
                 {
+                    // Hit a leaf, Node doesnt exist! Build one and add it to the tree 
+                    pNewRbTreeNode = __buildRbTreeNode(ID, Count);
                     pTempRbTreeNode->pLeftChild = pNewRbTreeNode;
-                    pNewRbTreeNode->pParent     = pTempRbTreeNode;
+                    pNewRbTreeNode->pParent = pTempRbTreeNode;
                     break;
                 }
             }
@@ -107,8 +118,10 @@ BOOLEAN __insertRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, UINT ID, UIN
                 }
                 else
                 {
-                    pTempRbTreeNode->pRightChild    = pNewRbTreeNode;
-                    pNewRbTreeNode->pParent         = pTempRbTreeNode;
+                    // Hit a leaf, Node doesnt exist! Build one and add it to the tree 
+                    pNewRbTreeNode = __buildRbTreeNode(ID, Count);
+                    pTempRbTreeNode->pRightChild = pNewRbTreeNode;
+                    pNewRbTreeNode->pParent = pTempRbTreeNode;
                     break;
                 }
             }
@@ -126,9 +139,11 @@ BOOLEAN __insertRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, UINT ID, UIN
     //   X - relationship between p and pp (parent)
     //   Y - relationship between pp and gp (grandparent)
     //   z - color of node d (uncle)
-    
-    pTempRbTreeNode = pNewRbTreeNode;     // Using Temp again for recursion
-    
+
+    // pNewRbTreeNode is the new node added
+    // Using pTempRbTreeNode for recursion
+    pTempRbTreeNode = pNewRbTreeNode;
+
     do
     {
         // Case I : Node Inserted is Root or we have back traversed the tree till root, make it black and done
@@ -147,19 +162,20 @@ BOOLEAN __insertRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, UINT ID, UIN
 
         // For rest of the cases store parent, grand parent and uncle tree nodes
         // and also the relationship
-        pParentRbTreeNode       = pTempRbTreeNode->pParent;
-        pGrandParentRbTreeNode  = pTempRbTreeNode->pParent->pParent;
-        IsTempNodeLeftChild     = pTempRbTreeNode == pParentRbTreeNode->pLeftChild ? TRUE : FALSE;
-        IsParentNodeLeftChild   = pParentRbTreeNode == pGrandParentRbTreeNode->pLeftChild ? TRUE : FALSE;
-        pUncleRbTreeNode        = IsParentNodeLeftChild ? pGrandParentRbTreeNode->pRightChild : pGrandParentRbTreeNode->pLeftChild;
+        pParentRbTreeNode = pTempRbTreeNode->pParent;
+        pGrandParentRbTreeNode = pTempRbTreeNode->pParent->pParent;
+        IsTempNodeLeftChild = pTempRbTreeNode == pParentRbTreeNode->pLeftChild ? TRUE : FALSE;
+        IsParentNodeLeftChild = pParentRbTreeNode == pGrandParentRbTreeNode->pLeftChild ? TRUE : FALSE;
+        pUncleRbTreeNode = IsParentNodeLeftChild ? pGrandParentRbTreeNode->pRightChild : pGrandParentRbTreeNode->pLeftChild;
 
         // Case III : XYr, uncle is red. color flip will do the trick
         if (pUncleRbTreeNode && pUncleRbTreeNode->Color == RED)
         {
-            pParentRbTreeNode->Color        = BLACK;
-            pGrandParentRbTreeNode->Color   = RED;
-            pUncleRbTreeNode->Color         = BLACK;
-            
+            pParentRbTreeNode->Color = BLACK;
+            pGrandParentRbTreeNode->Color = RED;
+            pUncleRbTreeNode->Color = BLACK;
+
+            pNewRbTreeNode = pTempRbTreeNode;
             pTempRbTreeNode = pGrandParentRbTreeNode;
             continue;
         }
@@ -170,8 +186,8 @@ BOOLEAN __insertRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, UINT ID, UIN
         if (IsTempNodeLeftChild && IsParentNodeLeftChild)
         {
             // Make the Color changes first 
-            pParentRbTreeNode->Color        = BLACK;
-            pGrandParentRbTreeNode->Color   = RED;
+            pParentRbTreeNode->Color = BLACK;
+            pGrandParentRbTreeNode->Color = RED;
 
             // Now make the pointer changes due to rotation
             if (pGrandParentRbTreeNode->pParent)
@@ -191,20 +207,20 @@ BOOLEAN __insertRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, UINT ID, UIN
                 pRbTreeContext->pMinRbTreeNode = pParentRbTreeNode;
             }
 
-            pGrandParentRbTreeNode->pLeftChild  = pParentRbTreeNode->pRightChild;
-            pParentRbTreeNode->pParent          = pGrandParentRbTreeNode->pParent;
-            pParentRbTreeNode->pRightChild      = pGrandParentRbTreeNode;
-            pGrandParentRbTreeNode->pParent     = pParentRbTreeNode;
+            pGrandParentRbTreeNode->pLeftChild = pParentRbTreeNode->pRightChild;
+            pParentRbTreeNode->pParent = pGrandParentRbTreeNode->pParent;
+            pParentRbTreeNode->pRightChild = pGrandParentRbTreeNode;
+            pGrandParentRbTreeNode->pParent = pParentRbTreeNode;
 
             break;
         }
-        
+
         // Case V : LRb Rotation
         if (!IsTempNodeLeftChild && IsParentNodeLeftChild)
         {
             // Make the color changes first 
-            pTempRbTreeNode->Color          = BLACK;
-            pGrandParentRbTreeNode->Color   = RED;
+            pTempRbTreeNode->Color = BLACK;
+            pGrandParentRbTreeNode->Color = RED;
 
             // Now make the pointer changes due to rotation 
             if (pGrandParentRbTreeNode->pParent)
@@ -224,15 +240,15 @@ BOOLEAN __insertRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, UINT ID, UIN
                 pRbTreeContext->pMinRbTreeNode = pTempRbTreeNode;
             }
 
-            pParentRbTreeNode->pRightChild      = pTempRbTreeNode->pLeftChild;
-            pGrandParentRbTreeNode->pLeftChild  = pTempRbTreeNode->pRightChild;
+            pParentRbTreeNode->pRightChild = pTempRbTreeNode->pLeftChild;
+            pGrandParentRbTreeNode->pLeftChild = pTempRbTreeNode->pRightChild;
 
-            pTempRbTreeNode->pParent            = pGrandParentRbTreeNode->pParent;
-            pTempRbTreeNode->pLeftChild         = pParentRbTreeNode;
-            pTempRbTreeNode->pRightChild        = pGrandParentRbTreeNode;
-        
-            pParentRbTreeNode->pParent          = pTempRbTreeNode;
-            pGrandParentRbTreeNode->pParent     = pTempRbTreeNode;
+            pTempRbTreeNode->pParent = pGrandParentRbTreeNode->pParent;
+            pTempRbTreeNode->pLeftChild = pParentRbTreeNode;
+            pTempRbTreeNode->pRightChild = pGrandParentRbTreeNode;
+
+            pParentRbTreeNode->pParent = pTempRbTreeNode;
+            pGrandParentRbTreeNode->pParent = pTempRbTreeNode;
 
             break;
         }
@@ -241,8 +257,8 @@ BOOLEAN __insertRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, UINT ID, UIN
         if (!IsTempNodeLeftChild && !IsParentNodeLeftChild)
         {
             // Make the Color changes first 
-            pParentRbTreeNode->Color        = BLACK;
-            pGrandParentRbTreeNode->Color   = RED;
+            pParentRbTreeNode->Color = BLACK;
+            pGrandParentRbTreeNode->Color = RED;
 
             // Now make the pointer changes due to rotation
             if (pGrandParentRbTreeNode->pParent)
@@ -263,9 +279,9 @@ BOOLEAN __insertRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, UINT ID, UIN
             }
 
             pGrandParentRbTreeNode->pRightChild = pParentRbTreeNode->pLeftChild;
-            pParentRbTreeNode->pParent          = pGrandParentRbTreeNode->pParent;
-            pParentRbTreeNode->pLeftChild       = pGrandParentRbTreeNode;
-            pGrandParentRbTreeNode->pParent     = pParentRbTreeNode;
+            pParentRbTreeNode->pParent = pGrandParentRbTreeNode->pParent;
+            pParentRbTreeNode->pLeftChild = pGrandParentRbTreeNode;
+            pGrandParentRbTreeNode->pParent = pParentRbTreeNode;
 
             break;
         }
@@ -274,8 +290,8 @@ BOOLEAN __insertRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, UINT ID, UIN
         if (IsTempNodeLeftChild && !IsParentNodeLeftChild)
         {
             // Make the color changes first 
-            pTempRbTreeNode->Color          = BLACK;
-            pGrandParentRbTreeNode->Color   = RED;
+            pTempRbTreeNode->Color = BLACK;
+            pGrandParentRbTreeNode->Color = RED;
 
             // Now make the pointer changes due to rotation 
             if (pGrandParentRbTreeNode->pParent)
@@ -295,14 +311,14 @@ BOOLEAN __insertRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, UINT ID, UIN
                 pRbTreeContext->pMinRbTreeNode = pTempRbTreeNode;
             }
 
-            pParentRbTreeNode->pLeftChild       = pTempRbTreeNode->pRightChild;
+            pParentRbTreeNode->pLeftChild = pTempRbTreeNode->pRightChild;
             pGrandParentRbTreeNode->pRightChild = pTempRbTreeNode->pLeftChild;
 
-            pTempRbTreeNode->pParent        = pGrandParentRbTreeNode->pParent;
-            pTempRbTreeNode->pRightChild    = pParentRbTreeNode;
-            pTempRbTreeNode->pLeftChild     = pGrandParentRbTreeNode;
+            pTempRbTreeNode->pParent = pGrandParentRbTreeNode->pParent;
+            pTempRbTreeNode->pRightChild = pParentRbTreeNode;
+            pTempRbTreeNode->pLeftChild = pGrandParentRbTreeNode;
 
-            pParentRbTreeNode->pParent      = pTempRbTreeNode;
+            pParentRbTreeNode->pParent = pTempRbTreeNode;
             pGrandParentRbTreeNode->pParent = pTempRbTreeNode;
 
             break;
@@ -311,17 +327,16 @@ BOOLEAN __insertRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, UINT ID, UIN
         // Phew !! 
         // Should never reach here, leave a print to catch the error 
         printf("__insertRbTreeNode: Restoring Red Black Property, Illegal scenario, Exit!\r\n");
-        return FALSE;
+        return NULL;
 
     } while (TRUE);
 
-    return TRUE;
+    return pNewRbTreeNode;;
 }
 
 // __findRbTreeNode()
-// This function finds the Rb Tree Node with the particular ID
-// in the Reb Black Tree
-PRB_TREE_NODE __findRbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, UINT ID)
+// This function finds the Rb Tree Node with the particular ID in the Reb Black Tree
+PRB_TREE_NODE __findRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, INT ID)
 {
     PRB_TREE_NODE    pTempRbTreeNode = NULL;
 
@@ -335,7 +350,7 @@ PRB_TREE_NODE __findRbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, UINT ID)
             {
                 break;
             }
-            else if (ID <= pTempRbTreeNode->ID)
+            else if (ID < pTempRbTreeNode->ID)
             {
                 pTempRbTreeNode = pTempRbTreeNode->pLeftChild;
             }
@@ -350,25 +365,13 @@ PRB_TREE_NODE __findRbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, UINT ID)
 }
 
 // __deleteRbTreeNode()
-// This function deletes the Rb Tree node in the 
-// Red black Tree. It checks if the node to be removed was 
-// degree 0/1/2 and then adjusts the pointers to call delete 
+// This function deletes the Rb Tree node in the Red black Tree. It assumes that the node is already present in the 
+// tree. It checks if the node to be removed was degree 0/1/2 and then adjusts the pointers to call delete 
 // using Degree 1 delete algorithm from Red Black Tree
-BOOLEAN __deleteRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, UINT ID)
+VOID __deleteRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, PRB_TREE_NODE pRbTreeNode)
 {
-    PRB_TREE_NODE   pRbTreeNode             = NULL;
     PRB_TREE_NODE   pMaxSubTreeRbTreeNode   = NULL;
     RB_TREE_NODE    TempRbTreeNode          = { 0 };
-
-    // Get the Tree Node with the ID
-    pRbTreeNode = __findRbTreeNode(pRbTreeContext, ID);
-
-    if (!pRbTreeNode)
-    {
-        // Making a check that the node was found
-        printf("__deleteRbTreeNode: Node with the ID %u not found\r\n", ID);
-        return FALSE;
-    }
 
     // Check if its a degree 0/1/2 node
     if (pRbTreeNode->pLeftChild && pRbTreeNode->pRightChild)
@@ -449,8 +452,6 @@ BOOLEAN __deleteRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, UINT ID)
         // Similar to deleting from a degree 1 node with y as NULL 
         __deleteDegree1RbTreeNode(pRbTreeContext, pRbTreeNode, NULL);
     }
-
-    return TRUE;
 }
 
 // __freeRbTreeNode()
@@ -470,9 +471,8 @@ VOID __freeRbTreeNode(PRB_TREE_NODE *ppRbTreeNode)
 }
 
 // __deleteDegree1RbTreeNode()
-// This function implements all the scenarios and rebalances the red black 
-// tree preserving the properties.
-BOOLEAN __deleteDegree1RbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, PRB_TREE_NODE pRbTreeNode, PRB_TREE_NODE pChildRbTreeNode)
+// This function implements all the scenarios and rebalances the red black tree preserving the properties.
+VOID __deleteDegree1RbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, PRB_TREE_NODE pRbTreeNode, PRB_TREE_NODE pChildRbTreeNode)
 {
     PRB_TREE_NODE   pTempRbTreeNode                         = NULL;
     PRB_TREE_NODE   pSiblingRbTreeNode                      = NULL;
@@ -506,7 +506,7 @@ BOOLEAN __deleteDegree1RbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, PRB_TREE_NODE
                 // Looks like removed node was the root and the only node
                 // Nothing to be done 
                 pRbTreeContext->pMinRbTreeNode = NULL;
-                return TRUE;
+                return;
             }
         }
 
@@ -904,13 +904,30 @@ BOOLEAN __deleteDegree1RbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, PRB_TREE_NODE
                 // Phew !! 
                 // Should never reach here, leave a print to catch the error 
                 printf("__deleteDegree1RbTreeNode: Restoring Red Black Property, Illegal scenario, Exit!\r\n");
-                return FALSE;
 
             } while (TRUE);
         }
     }
-
-    return TRUE;
 }
+
+// __getNextIDRbTreeNode()
+// This function returns the next node with ID greater than the current node 
+// It assumes that current Node exists
+PRB_TREE_NODE __getNextIDRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, PRB_TREE_NODE pRbTreeNode)
+{
+    // The node with greater ID will be either the node with smallest ID in the right subtree 
+    // or if the right subtree is empty than the parent 
+
+}
+
+// __getPrevIDRbTreeNode()
+// This function returns the next node with ID less than the current node 
+// It assumes that current Node exists
+PRB_TREE_NODE __getPrevIDRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, PRB_TREE_NODE pRbTreeNode)
+{
+
+}
+
+
 
 

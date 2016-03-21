@@ -11,8 +11,8 @@
 // Definitions 
 typedef struct _RB_TREE_NODE
 {
-    UINT    ID; 
-    UINT    Count;
+    INT    ID; 
+    INT    Count;
     enum {RED, BLACK} Color;
     struct _RB_TREE_NODE *pLeftChild;
     struct _RB_TREE_NODE *pRightChild;
@@ -25,9 +25,12 @@ typedef struct _RB_TREE_CONTEXT
     PRB_TREE_NODE       pMinRbTreeNode;
     struct _RB_TREE_FN_TBL
     {
-        BOOLEAN(*insertRbTreeNode) (struct _RB_TREE_CONTEXT *pRbTreeContext, UINT ID, UINT Count);
-        BOOLEAN(*deleteRbTreeNode) (struct _RB_TREE_CONTEXT *pRbTreeContext, UINT ID);
-    }RbTreeFnTbl;
+        PRB_TREE_NODE(*insertRbTreeNode) (struct _RB_TREE_CONTEXT *pRbTreeContext, INT ID, INT Count);
+        VOID(*deleteRbTreeNode) (struct _RB_TREE_CONTEXT *pRbTreeContext, PRB_TREE_NODE pRbTreeNode);
+        PRB_TREE_NODE(*findRbTreeNode) (struct _RB_TREE_CONTEXT *pRbTreeContext, INT ID);
+        PRB_TREE_NODE(*getNextIDRbTreeNode) (struct _RB_TREE_CONTEXT *pRbTreeContext, PRB_TREE_NODE pRbTreeNode);
+        PRB_TREE_NODE(*getPrevIDRbTreeNode) (struct _RB_TREE_CONTEXT *pRbTreeContext, PRB_TREE_NODE pRbTreeNode);
+    }stRbTreeFnTbl;
 }RB_TREE_CONTEXT, *PRB_TREE_CONTEXT;
 
 // Funtion Prototypes

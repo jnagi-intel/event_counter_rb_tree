@@ -30,7 +30,7 @@ PRB_TREE_CONTEXT createRbTreeContext()
     pRbTreeContext = (PRB_TREE_CONTEXT)malloc(sizeof(RB_TREE_CONTEXT));
 
     // Initialize the variables
-    pRbTreeContext->pMinRbTreeNode = NULL;
+    pRbTreeContext->pRootRbTreeNode = NULL;
 
     // Initilize the function table
     pRbTreeContext->stRbTreeFnTbl.insertRbTreeNode              = __insertRbTreeNode;
@@ -55,7 +55,7 @@ VOID destroyRbTreeContext(PRB_TREE_CONTEXT *ppRbTreeContext)
         (*ppRbTreeContext)->pRbTreeNodeArrayList = NULL;
     }
 
-    (*ppRbTreeContext)->pMinRbTreeNode = NULL;
+    (*ppRbTreeContext)->pRootRbTreeNode = NULL;
 
     if (*ppRbTreeContext)
     {
@@ -96,16 +96,16 @@ PRB_TREE_NODE __insertRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, INT ID
     BOOLEAN         IsParentNodeLeftChild   = FALSE;
 
     // First check if the node already exists or not
-    if (pRbTreeContext->pMinRbTreeNode == NULL)
+    if (pRbTreeContext->pRootRbTreeNode == NULL)
     {
         // Node doesnt exist! Build a node and add it to the root of the tree and return
-        pRbTreeContext->pMinRbTreeNode = __buildRbTreeNode(ID, Count);
-        pNewRbTreeNode = pRbTreeContext->pMinRbTreeNode;
+        pRbTreeContext->pRootRbTreeNode = __buildRbTreeNode(ID, Count);
+        pNewRbTreeNode = pRbTreeContext->pRootRbTreeNode;
     }
     else
     {
         // search for the node, if it doesnt exist we will hit a NULL node
-        pTempRbTreeNode = pRbTreeContext->pMinRbTreeNode;
+        pTempRbTreeNode = pRbTreeContext->pRootRbTreeNode;
         while (pTempRbTreeNode != NULL)
         {
             if (ID == pTempRbTreeNode->ID)
@@ -167,9 +167,9 @@ PRB_TREE_NODE __insertRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, INT ID
     do
     {
         // Case I : Node Inserted is Root or we have back traversed the tree till root, make it black and done
-        if (pTempRbTreeNode == pRbTreeContext->pMinRbTreeNode)
+        if (pTempRbTreeNode == pRbTreeContext->pRootRbTreeNode)
         {
-            pRbTreeContext->pMinRbTreeNode->Color = BLACK;
+            pRbTreeContext->pRootRbTreeNode->Color = BLACK;
             break;
         }
 
@@ -224,7 +224,7 @@ PRB_TREE_NODE __insertRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, INT ID
             else
             {
                 // Grandparent was the root 
-                pRbTreeContext->pMinRbTreeNode = pParentRbTreeNode;
+                pRbTreeContext->pRootRbTreeNode = pParentRbTreeNode;
             }
 
             pGrandParentRbTreeNode->pLeftChild = pParentRbTreeNode->pRightChild;
@@ -258,7 +258,7 @@ PRB_TREE_NODE __insertRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, INT ID
             else
             {
                 // Grandparent was the root 
-                pRbTreeContext->pMinRbTreeNode = pTempRbTreeNode;
+                pRbTreeContext->pRootRbTreeNode = pTempRbTreeNode;
             }
 
             pParentRbTreeNode->pRightChild = pTempRbTreeNode->pLeftChild;
@@ -299,7 +299,7 @@ PRB_TREE_NODE __insertRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, INT ID
             else
             {
                 // Grandparent was the root 
-                pRbTreeContext->pMinRbTreeNode = pParentRbTreeNode;
+                pRbTreeContext->pRootRbTreeNode = pParentRbTreeNode;
             }
 
             pGrandParentRbTreeNode->pRightChild = pParentRbTreeNode->pLeftChild;
@@ -333,7 +333,7 @@ PRB_TREE_NODE __insertRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, INT ID
             else
             {
                 // Grandparent was the root 
-                pRbTreeContext->pMinRbTreeNode = pTempRbTreeNode;
+                pRbTreeContext->pRootRbTreeNode = pTempRbTreeNode;
             }
 
             pParentRbTreeNode->pLeftChild = pTempRbTreeNode->pRightChild;
@@ -370,10 +370,10 @@ PRB_TREE_NODE __findRbTreeNode(struct _RB_TREE_CONTEXT *pRbTreeContext, INT ID)
 {
     PRB_TREE_NODE    pTempRbTreeNode = NULL;
 
-    if (pRbTreeContext->pMinRbTreeNode)
+    if (pRbTreeContext->pRootRbTreeNode)
     {
         // Verifying that the root of the tree exists, now recurse!
-        pTempRbTreeNode = pRbTreeContext->pMinRbTreeNode;
+        pTempRbTreeNode = pRbTreeContext->pRootRbTreeNode;
         while (TRUE)
         {
             if (ID == pTempRbTreeNode->ID)
@@ -549,7 +549,7 @@ VOID __deleteDegree1RbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, PRB_TREE_NODE pR
             {
                 // Looks like removed node was the root and the only node
                 // Nothing to be done 
-                pRbTreeContext->pMinRbTreeNode = NULL;
+                pRbTreeContext->pRootRbTreeNode = NULL;
                 return;
             }
         }
@@ -565,7 +565,7 @@ VOID __deleteDegree1RbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, PRB_TREE_NODE pR
 
             if (pChildRbTreeNode->pParent == NULL)
             {
-                pRbTreeContext->pMinRbTreeNode = pChildRbTreeNode;
+                pRbTreeContext->pRootRbTreeNode = pChildRbTreeNode;
             }
         }
         else
@@ -578,7 +578,7 @@ VOID __deleteDegree1RbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, PRB_TREE_NODE pR
                 // if y is the root, then the entire tree is deficient, so done
                 if (pTempRbTreeNode && pTempRbTreeNode->pParent == NULL)
                 {
-                    pRbTreeContext->pMinRbTreeNode = pTempRbTreeNode;
+                    pRbTreeContext->pRootRbTreeNode = pTempRbTreeNode;
                     break;
                 }
 
@@ -670,7 +670,7 @@ VOID __deleteDegree1RbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, PRB_TREE_NODE pR
 
                     if (pSiblingRbTreeNode->pParent == NULL)
                     {
-                        pRbTreeContext->pMinRbTreeNode = pSiblingRbTreeNode;
+                        pRbTreeContext->pRootRbTreeNode = pSiblingRbTreeNode;
                     }
 
                     break;
@@ -691,7 +691,7 @@ VOID __deleteDegree1RbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, PRB_TREE_NODE pR
 
                     if (pSiblingRbTreeNode->pParent == NULL)
                     {
-                        pRbTreeContext->pMinRbTreeNode = pSiblingRbTreeNode;
+                        pRbTreeContext->pRootRbTreeNode = pSiblingRbTreeNode;
                     }
 
                     break;
@@ -719,7 +719,7 @@ VOID __deleteDegree1RbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, PRB_TREE_NODE pR
 
                     if (pSiblingRedChildRbTreeNode->pParent == NULL)
                     {
-                        pRbTreeContext->pMinRbTreeNode = pSiblingRedChildRbTreeNode;
+                        pRbTreeContext->pRootRbTreeNode = pSiblingRedChildRbTreeNode;
                     }
                     
                     break;
@@ -747,7 +747,7 @@ VOID __deleteDegree1RbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, PRB_TREE_NODE pR
 
                     if (pSiblingRedChildRbTreeNode->pParent == NULL)
                     {
-                        pRbTreeContext->pMinRbTreeNode = pSiblingRedChildRbTreeNode;
+                        pRbTreeContext->pRootRbTreeNode = pSiblingRedChildRbTreeNode;
                     }
 
                     break;
@@ -812,7 +812,7 @@ VOID __deleteDegree1RbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, PRB_TREE_NODE pR
 
                     if (pSiblingRbTreeNode->pParent == NULL)
                     {
-                        pRbTreeContext->pMinRbTreeNode = pSiblingRbTreeNode;
+                        pRbTreeContext->pRootRbTreeNode = pSiblingRbTreeNode;
                     }
 
                     break;
@@ -833,7 +833,7 @@ VOID __deleteDegree1RbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, PRB_TREE_NODE pR
 
                     if (pSiblingRbTreeNode->pParent == NULL)
                     {
-                        pRbTreeContext->pMinRbTreeNode = pSiblingRbTreeNode;
+                        pRbTreeContext->pRootRbTreeNode = pSiblingRbTreeNode;
                     }
                     
                     break;
@@ -859,7 +859,7 @@ VOID __deleteDegree1RbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, PRB_TREE_NODE pR
 
                     if (pSiblingRightChildRbTreeNode->pParent == NULL)
                     {
-                        pRbTreeContext->pMinRbTreeNode = pSiblingRightChildRbTreeNode;
+                        pRbTreeContext->pRootRbTreeNode = pSiblingRightChildRbTreeNode;
                     }
                     
                     break;
@@ -885,7 +885,7 @@ VOID __deleteDegree1RbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, PRB_TREE_NODE pR
 
                     if (pSiblingLeftChildRbTreeNode->pParent == NULL)
                     {
-                        pRbTreeContext->pMinRbTreeNode = pSiblingLeftChildRbTreeNode;
+                        pRbTreeContext->pRootRbTreeNode = pSiblingLeftChildRbTreeNode;
                     }
                     
                     break;
@@ -912,7 +912,7 @@ VOID __deleteDegree1RbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, PRB_TREE_NODE pR
 
                     if (pSiblingRightChildRedChildRbTreeNode->pParent == NULL)
                     {
-                        pRbTreeContext->pMinRbTreeNode = pSiblingRightChildRedChildRbTreeNode;
+                        pRbTreeContext->pRootRbTreeNode = pSiblingRightChildRedChildRbTreeNode;
                     }
                     
                     break;
@@ -939,7 +939,7 @@ VOID __deleteDegree1RbTreeNode(PRB_TREE_CONTEXT pRbTreeContext, PRB_TREE_NODE pR
 
                     if (pSiblingLeftChildRedChildRbTreeNode->pParent == NULL)
                     {
-                        pRbTreeContext->pMinRbTreeNode = pSiblingLeftChildRedChildRbTreeNode;
+                        pRbTreeContext->pRootRbTreeNode = pSiblingLeftChildRedChildRbTreeNode;
                     }
 
                     break;
@@ -1067,7 +1067,7 @@ VOID __initializeRbTree(struct _RB_TREE_CONTEXT *pRbTreeContext)
     pRbTreeContext->RbTreeHeight = (UINT)(log(pRbTreeContext->NumNodesRbTree) / log(2));
 
     // call the sorted array to rb tree function to build the RB Tree recursively 
-    pRbTreeContext->pMinRbTreeNode = __sortedArrayToRbTree(pRbTreeContext, 0, pRbTreeContext->NumNodesRbTree - 1, 0);
+    pRbTreeContext->pRootRbTreeNode = __sortedArrayToRbTree(pRbTreeContext, 0, pRbTreeContext->NumNodesRbTree - 1, 0);
 }
 
 // __sortedArrayToRbTree()

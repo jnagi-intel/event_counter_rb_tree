@@ -22,7 +22,7 @@ typedef struct _RB_TREE_NODE
 // Red Black Tree Context Definition 
 typedef struct _RB_TREE_CONTEXT
 {
-    PRB_TREE_NODE       pMinRbTreeNode;
+    PRB_TREE_NODE       pRootRbTreeNode;
     PRB_TREE_NODE       pRbTreeNodeArrayList;
     UINT                NumNodesRbTree;
     UINT                RbTreeHeight;
